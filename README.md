@@ -1,8 +1,8 @@
 <!-- Logo and Title -->
 <div align="center">
-  <img src="frontend/public/logo.png" alt="ContactSphere Logo" width="300" style="margin-bottom: 0.5em;" />
+  <img src="frontend/public/logo.png" alt="ContactSphere Logo" width="400" style="margin-bottom: 0.5em;" />
   
-  <h1 style="margin-top: 0;">ContactSphere</h1>
+  <!-- <h1 style="margin-top: 0;">ContactSphere</h1> -->
   
   <p>
     <img src="https://img.shields.io/badge/status-under%20development-orange" alt="Under Development" />
