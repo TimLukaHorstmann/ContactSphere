@@ -1,8 +1,15 @@
-![Under Development](https://img.shields.io/badge/status-under%20development-orange)
-![Issues](https://img.shields.io/github/issues/luka512/contact-circle-vision)
-![License](https://img.shields.io/github/license/luka512/contact-circle-vision)
-
-# ContactSphere
+<!-- Logo and Title -->
+<div align="center">
+  <img src="frontend/public/logo.png" alt="ContactSphere Logo" width="300" style="margin-bottom: 0.5em;" />
+  
+  <h1 style="margin-top: 0;">ContactSphere</h1>
+  
+  <p>
+    <img src="https://img.shields.io/badge/status-under%20development-orange" alt="Under Development" />
+    <img src="https://img.shields.io/github/issues/TimLukaHorstmann/ContactSphere" alt="Issues" />
+    <!-- <img src="https://img.shields.io/github/license/TimLukaHorstmann/ContactSphere" alt="License" /> -->
+  </p>
+</div>
 
 The Ultimate Personal CRM: ContactSphere is your private, all-in-one solution for mastering your network. Transform your Google Contacts into a dynamic, interactive, and insightful relationship management system. Whether you're a professional, entrepreneur, or just someone who values meaningful connections, ContactSphere empowers you to visualize, organize, and leverage your network like never before.
 
