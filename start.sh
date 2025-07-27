@@ -46,7 +46,7 @@ fi
 if [ ! -f "backend/.venv/lib/python*/site-packages/fastapi" ]; then
     echo "📦 Installing backend dependencies..."
     cd backend
-    /Users/luka512/.local/bin/uv pip install -r requirements.txt
+    /Users/luka512/.local/bin/uv sync
     cd ..
 fi
 

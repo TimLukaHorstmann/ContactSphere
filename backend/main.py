@@ -10,8 +10,9 @@ from typing import List, Dict, Any, Optional
 from auth import GoogleAuth
 from graph_database import GraphDatabase
 from contacts_service import ContactsService
+from linkedin_service import LinkedInService
 from backup_service import BackupService
-from models import SyncResponse, Contact, ContactEdge, TagRequest, NotesRequest, OrganizationNode
+from models import SyncResponse, Contact, ContactEdge, TagRequest, NotesRequest, OrganizationNode, LinkedInSyncResponse
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -32,6 +33,7 @@ app.add_middleware(
 google_auth = GoogleAuth()
 db = GraphDatabase()
 contacts_service = ContactsService(db)
+linkedin_service = LinkedInService(db)
 backup_service = BackupService(db)
 
 @app.on_event("startup")
@@ -83,6 +85,22 @@ async def sync_contacts() -> SyncResponse:
     except Exception as e:
         logger.error(f"Sync failed: {e}")
         raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
+
+@app.post("/api/sync/linkedin")
+async def sync_linkedin_contacts() -> LinkedInSyncResponse:
+    """Sync contacts from LinkedIn and match with existing contacts"""
+    try:
+        logger.info("Starting LinkedIn contact sync")
+        
+        # Sync contacts from LinkedIn
+        result = await linkedin_service.sync_linkedin_contacts()
+        
+        logger.info(f"LinkedIn sync completed: {result.imported} imported, {result.updated} updated, {result.matched} matched")
+        return result
+        
+    except Exception as e:
+        logger.error(f"LinkedIn sync failed: {e}")
+        raise HTTPException(status_code=500, detail=f"LinkedIn sync failed: {str(e)}")
 
 @app.get("/api/contacts", response_model=List[Contact])
 async def get_contacts(search: Optional[str] = None) -> List[Contact]:

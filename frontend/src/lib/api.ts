@@ -1,4 +1,4 @@
-import { Contact, ContactEdge, SyncResponse, AuthResponse, OrganizationNode } from '@/types/api';
+import { Contact, ContactEdge, SyncResponse, AuthResponse, OrganizationNode, LinkedInSyncResponse } from '@/types/api';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -7,6 +7,7 @@ class ApiClient {
     // Bind methods to preserve 'this' context
     this.startAuth = this.startAuth.bind(this);
     this.syncContacts = this.syncContacts.bind(this);
+    this.syncLinkedInContacts = this.syncLinkedInContacts.bind(this);
     this.getContacts = this.getContacts.bind(this);
     this.getEdges = this.getEdges.bind(this);
     this.getUncategorizedContacts = this.getUncategorizedContacts.bind(this);
@@ -46,6 +47,13 @@ class ApiClient {
 
   async syncContacts(): Promise<SyncResponse> {
     const response = await this.fetchWithAuth('/api/sync', {
+      method: 'POST',
+    });
+    return response.json();
+  }
+
+  async syncLinkedInContacts(): Promise<LinkedInSyncResponse> {
+    const response = await this.fetchWithAuth('/api/sync/linkedin', {
       method: 'POST',
     });
     return response.json();

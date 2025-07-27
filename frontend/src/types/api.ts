@@ -17,6 +17,12 @@ export interface Contact {
   uncategorized: boolean;
   created_at?: string;
   updated_at?: string;
+  // LinkedIn fields
+  linkedin_url?: string;
+  linkedin_company?: string;
+  linkedin_position?: string;
+  linkedin_connected_date?: string;
+  last_linkedin_sync?: string;
 }
 
 export interface ContactEdge {
@@ -45,4 +51,11 @@ export interface OrganizationNode {
   type: 'organization';
   employee_count: number;
   created_at?: string;
+}
+
+export interface LinkedInSyncResponse {
+  imported: number;
+  updated: number;
+  matched: number;
+  total_linkedin_contacts: number;
 }

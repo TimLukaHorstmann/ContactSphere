@@ -64,6 +64,11 @@ class GraphDatabase:
                     c.raw_data = $raw_data,
                     c.tags = $tags,
                     c.uncategorized = $uncategorized,
+                    c.linkedin_url = $linkedin_url,
+                    c.linkedin_company = $linkedin_company,
+                    c.linkedin_position = $linkedin_position,
+                    c.linkedin_connected_date = $linkedin_connected_date,
+                    c.last_linkedin_sync = $last_linkedin_sync,
                     c.updated_at = datetime()
             """, **self._contact_to_dict(contact))
             
@@ -383,7 +388,12 @@ class GraphDatabase:
             "notes": contact.notes,
             "raw_data": json.dumps(contact.raw_data),
             "tags": contact.tags,
-            "uncategorized": contact.uncategorized
+            "uncategorized": contact.uncategorized,
+            "linkedin_url": contact.linkedin_url,
+            "linkedin_company": contact.linkedin_company,
+            "linkedin_position": contact.linkedin_position,
+            "linkedin_connected_date": contact.linkedin_connected_date,
+            "last_linkedin_sync": contact.last_linkedin_sync.isoformat() if contact.last_linkedin_sync else None
         }
         
     def _node_to_contact(self, node) -> Contact:
@@ -391,11 +401,17 @@ class GraphDatabase:
         # Convert Neo4j DateTime objects to Python datetime objects
         created_at = node.get("created_at")
         updated_at = node.get("updated_at")
+        last_linkedin_sync = node.get("last_linkedin_sync")
         
         if created_at and hasattr(created_at, 'to_native'):
             created_at = created_at.to_native()
         if updated_at and hasattr(updated_at, 'to_native'):
             updated_at = updated_at.to_native()
+        if last_linkedin_sync and isinstance(last_linkedin_sync, str):
+            try:
+                last_linkedin_sync = datetime.fromisoformat(last_linkedin_sync)
+            except ValueError:
+                last_linkedin_sync = None
             
         return Contact(
             id=node["id"],
@@ -415,5 +431,10 @@ class GraphDatabase:
             tags=node.get("tags", []),
             uncategorized=node.get("uncategorized", False),
             created_at=created_at,
-            updated_at=updated_at
+            updated_at=updated_at,
+            linkedin_url=node.get("linkedin_url"),
+            linkedin_company=node.get("linkedin_company"),
+            linkedin_position=node.get("linkedin_position"),
+            linkedin_connected_date=node.get("linkedin_connected_date"),
+            last_linkedin_sync=last_linkedin_sync
         )

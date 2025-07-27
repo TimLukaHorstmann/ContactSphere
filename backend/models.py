@@ -21,6 +21,12 @@ class Contact(BaseModel):
     uncategorized: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    # LinkedIn fields
+    linkedin_url: Optional[str] = None
+    linkedin_company: Optional[str] = None
+    linkedin_position: Optional[str] = None
+    linkedin_connected_date: Optional[str] = None
+    last_linkedin_sync: Optional[datetime] = None
 
 class ContactEdge(BaseModel):
     id: Optional[str] = None  # Changed from int to str to support Neo4j elementId
@@ -48,6 +54,12 @@ class NotesRequest(BaseModel):
 class OrganizationNode(BaseModel):
     id: str  # Format: "org_{organization_name_slug}"
     name: str
+
+class LinkedInSyncResponse(BaseModel):
+    imported: int
+    updated: int
+    matched: int
+    total_linkedin_contacts: int
     type: str = "organization"
     employee_count: int = 0
     created_at: Optional[datetime] = None
