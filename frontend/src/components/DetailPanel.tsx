@@ -156,8 +156,18 @@ const DetailPanel = ({ contact, open, onClose }: DetailPanelProps) => {
                   <div className="flex items-center gap-3">
                     <Building className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <span className="text-sm font-medium">Organization</span>
+                      <span className="text-sm font-medium">Current Organization</span>
                       <p className="text-sm text-muted-foreground">{contact.organization}</p>
+                    </div>
+                  </div>
+                )}
+
+                {contact.previous_organization && (
+                  <div className="flex items-center gap-3">
+                    <Building className="h-4 w-4 text-muted-foreground opacity-60" />
+                    <div>
+                      <span className="text-sm font-medium">Previous Organization</span>
+                      <p className="text-sm text-muted-foreground">{contact.previous_organization}</p>
                     </div>
                   </div>
                 )}

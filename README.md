@@ -11,17 +11,18 @@
   </p>
 </div>
 
-The Ultimate Personal CRM: ContactSphere is your private, all-in-one solution for mastering your network. Transform your Google Contacts into a dynamic, interactive, and insightful relationship management system. Whether you're a professional, entrepreneur, or just someone who values meaningful connections, ContactSphere empowers you to visualize, organize, and leverage your network like never before.
+The Ultimate Personal CRM: ContactSphere is your private, all-in-one solution for mastering your network. Transform your Google Contacts and LinkedIn connections into a dynamic, interactive, and insightful relationship management system. Whether you're a professional, entrepreneur, or just someone who values meaningful connections, ContactSphere empowers you to visualize, organize, and leverage your network like never before.
 
 ## Features
 
-- 🔐 **Google OAuth 2.0**: Secure read-only access to your Google Contacts
-- 📊 **Interactive Graph**: Force-directed network visualization of your contacts
-- 🔍 **Smart Relationships**: Automatically infers colleague, local, alumni, and other connections
-- 🏷️ **Manual Tags**: Add custom tags like mentor, investor, family
-- 📝 **List View**: Table view with search and uncategorized contact detection
-- 💾 **Local Neo4j Database**: Graph database for optimal relationship storage
-- 📁 **Local Backup**: Download your data as JSON files for safekeeping
+- **Google OAuth 2.0**: Secure read-only access to your Google Contacts
+- **LinkedIn Integration**: Enrich your contacts with LinkedIn data for deeper insights
+- **Interactive Graph**: Force-directed network visualization of your contacts
+- **Smart Relationships**: Automatically infers colleague, local, alumni, and other connections
+- **Manual Tags**: Add custom tags like mentor, investor, family
+- **List View**: Table view with search and uncategorized contact detection
+- **Local Neo4j Database**: Graph database for optimal relationship storage
+- **Local Backup**: Download your data as JSON files for safekeeping
 
 ## Quick Start
 
@@ -103,9 +104,10 @@ This will start:
 2. Open `http://localhost:8080` in your browser
 3. Click "Connect Google" to authenticate
 4. Grant read-only access to your contacts
-5. Click "Refresh" to sync your contacts
-6. Explore the graph and list views!
-7. Use "Backup" button to download your data locally
+5. Click "Refresh Google" to sync your contacts
+6. Click "Sync LinkedIn" to enrich contacts with LinkedIn data
+7. Explore the graph and list views!
+8. Use "Backup" button to download your data locally
 
 ## Architecture
 

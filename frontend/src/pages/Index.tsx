@@ -117,7 +117,7 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Network className="h-6 w-6 text-primary" />
-              <h1 className="text-2xl font-bold">ContactGraph</h1>
+              <h1 className="text-2xl font-bold">ContactSphere</h1>
             </div>
             
             <div className="flex items-center gap-4">

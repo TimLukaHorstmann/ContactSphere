@@ -53,6 +53,7 @@ class GraphDatabase:
                     c.email = $email,
                     c.phone = $phone,
                     c.organization = $organization,
+                    c.previous_organization = $previous_organization,
                     c.city = $city,
                     c.country = $country,
                     c.birthday = $birthday,
@@ -83,12 +84,15 @@ class GraphDatabase:
                     WHERE toLower(c.name) CONTAINS toLower($search_term)
                        OR toLower(coalesce(c.email, '')) CONTAINS toLower($search_term)
                        OR toLower(coalesce(c.organization, '')) CONTAINS toLower($search_term)
+                       OR toLower(coalesce(c.previous_organization, '')) CONTAINS toLower($search_term)
                        OR toLower(coalesce(c.city, '')) CONTAINS toLower($search_term)
                        OR toLower(coalesce(c.country, '')) CONTAINS toLower($search_term)
                        OR toLower(coalesce(c.phone, '')) CONTAINS toLower($search_term)
                        OR toLower(coalesce(c.address, '')) CONTAINS toLower($search_term)
                        OR toLower(coalesce(c.notes, '')) CONTAINS toLower($search_term)
                        OR toLower(coalesce(c.birthday, '')) CONTAINS toLower($search_term)
+                       OR toLower(coalesce(c.linkedin_company, '')) CONTAINS toLower($search_term)
+                       OR toLower(coalesce(c.linkedin_position, '')) CONTAINS toLower($search_term)
                        OR ANY(tag IN coalesce(c.tags, []) WHERE toLower(tag) CONTAINS toLower($search_term))
                     RETURN c
                     ORDER BY c.name
@@ -378,6 +382,7 @@ class GraphDatabase:
             "email": contact.email,
             "phone": contact.phone,
             "organization": contact.organization,
+            "previous_organization": contact.previous_organization,
             "city": contact.city,
             "country": contact.country,
             "birthday": contact.birthday,
@@ -419,6 +424,7 @@ class GraphDatabase:
             email=node.get("email"),
             phone=node.get("phone"),
             organization=node.get("organization"),
+            previous_organization=node.get("previous_organization"),
             city=node.get("city"),
             country=node.get("country"),
             birthday=node.get("birthday"),

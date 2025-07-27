@@ -9,8 +9,8 @@ from models import Contact, ContactEdge
 logger = logging.getLogger(__name__)
 
 class BackupService:
-    """Service for backing up and restoring ContactGraph data"""
-    
+    """Service for backing up and restoring ContactSphere data"""
+
     def __init__(self, database: GraphDatabase):
         self.db = database
         
@@ -34,7 +34,7 @@ class BackupService:
                     "contact_count": len(contacts),
                     "edge_count": len(edges),
                     "created_at": datetime.now().isoformat(),
-                    "app_name": "ContactGraph"
+                    "app_name": "ContactSphere",
                 },
                 "contacts": contacts,
                 "edges": edges,

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# ContactGraph startup script
+# ContactSphere startup script
 
-echo "🚀 Starting ContactGraph..."
+echo "🚀 Starting ContactSphere..."
 echo
 
 # Check if backend .env file exists

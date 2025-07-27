@@ -18,7 +18,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="ContactGraph API", version="1.0.0")
+app = FastAPI(title="ContactSphere API", version="1.0.0")
 
 # CORS middleware for frontend
 app.add_middleware(
@@ -39,11 +39,11 @@ backup_service = BackupService(db)
 @app.on_event("startup")
 async def startup():
     db.init_db()
-    logger.info("ContactGraph API started")
+    logger.info("ContactSphere API started")
 
 @app.get("/")
 async def root():
-    return {"message": "ContactGraph API", "version": "1.0.0"}
+    return {"message": "ContactSphere API", "version": "1.0.0"}
 
 @app.get("/auth/google")
 async def google_auth_start():

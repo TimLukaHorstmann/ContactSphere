@@ -8,6 +8,7 @@ class Contact(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     organization: Optional[str] = None
+    previous_organization: Optional[str] = None  # For preserving original org when LinkedIn updates current
     city: Optional[str] = None
     country: Optional[str] = None
     birthday: Optional[str] = None

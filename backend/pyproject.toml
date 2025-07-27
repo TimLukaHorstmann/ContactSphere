@@ -1,7 +1,7 @@
 [project]
-name = "contactgraph-backend"
+name = "contactsphere-backend"
 version = "1.0.0"
-description = "ContactGraph backend API"
+description = "ContactSphere backend API"
 dependencies = [
     "fastapi==0.104.1",
     "uvicorn[standard]==0.24.0",

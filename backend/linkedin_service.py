@@ -213,9 +213,20 @@ class LinkedInService:
         contact.linkedin_connected_date = linkedin_contact.get("Connected On", "")
         contact.last_linkedin_sync = datetime.now()
         
-        # Update organization if not already set or if LinkedIn has more recent info
-        if not contact.organization and contact.linkedin_company:
-            contact.organization = contact.linkedin_company
+        # Smart organization handling: preserve original as previous_organization if different
+        linkedin_org = linkedin_contact.get("Company", "").strip()
+        if linkedin_org:
+            if contact.organization and contact.organization.strip():
+                # If we have an existing org and it's different from LinkedIn org
+                if contact.organization.strip().lower() != linkedin_org.lower():
+                    # Move current org to previous_organization (if not already set)
+                    if not contact.previous_organization:
+                        contact.previous_organization = contact.organization
+                    # Update current org to LinkedIn (more current)
+                    contact.organization = linkedin_org
+            else:
+                # No existing org, just use LinkedIn org
+                contact.organization = linkedin_org
         
         # Update email if not already set
         linkedin_email = linkedin_contact.get("Email Address", "").strip()

@@ -124,7 +124,7 @@ class ApiClient {
       
       // Create filename with timestamp
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '_');
-      const filename = `contactgraph_backup_${timestamp}.json`;
+      const filename = `contactsphere_backup_${timestamp}.json`;
       
       // Create and download file
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });

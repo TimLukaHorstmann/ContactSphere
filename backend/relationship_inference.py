@@ -26,6 +26,7 @@ class RelationshipInference:
         # Generate edges with smart company relationship handling
         edges.extend(self._create_company_relationships(org_groups))
         edges.extend(self._create_location_relationships(city_groups))
+        edges.extend(self._create_location_relationships(city_groups))
         edges.extend(self._create_edges_from_groups(domain_groups, 'WORKS_WITH', 0.7))
         edges.extend(self._create_edges_from_groups(birthday_groups, 'SHARES_BIRTHDAY', 0.3))
         edges.extend(self._create_edges_from_groups(school_groups, 'ALUMNI_OF', 0.6))
@@ -33,15 +34,24 @@ class RelationshipInference:
         return edges
     
     def _group_by_attribute(self, contacts: List[Contact], attr: str) -> Dict[str, List[Contact]]:
-        """Group contacts by a specific attribute"""
+        """Group contacts by a specific attribute, including previous_organization"""
         groups = {}
         for contact in contacts:
+            # Handle current organization
             value = getattr(contact, attr, None)
             if value and value.strip():
                 key = value.strip().lower()
                 if key not in groups:
                     groups[key] = []
                 groups[key].append(contact)
+            
+            # Also handle previous_organization if we're grouping by organization
+            if attr == 'organization' and contact.previous_organization and contact.previous_organization.strip():
+                prev_key = contact.previous_organization.strip().lower()
+                if prev_key not in groups:
+                    groups[prev_key] = []
+                groups[prev_key].append(contact)
+                
         return {k: v for k, v in groups.items() if len(v) > 1}  # Only groups with multiple contacts
     
     def _group_by_email_domain(self, contacts: List[Contact]) -> Dict[str, List[Contact]]:

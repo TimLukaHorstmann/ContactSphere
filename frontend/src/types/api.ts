@@ -4,6 +4,7 @@ export interface Contact {
   email?: string;
   phone?: string;
   organization?: string;
+  previous_organization?: string;  // For preserving original org when LinkedIn updates current
   city?: string;
   country?: string;
   birthday?: string;
