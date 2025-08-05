@@ -130,7 +130,7 @@ wheels = [
 ]
 
 [[package]]
-name = "contactgraph-backend"
+name = "contactsphere-backend"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [

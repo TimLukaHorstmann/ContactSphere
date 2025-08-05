@@ -5,7 +5,7 @@ import { Contact, ContactEdge } from '@/types/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize2, Search, Filter } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize2, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -302,30 +302,39 @@ const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = 
     // Update community overlays during any animation (throttled for performance)
     const updateDuringAnimation = () => {
       const now = Date.now();
-      if (now - lastUpdateTimeRef.current > 50) { // Throttle to 20fps max
+      if (now - lastUpdateTimeRef.current > 30) { // Increase to ~33fps for smoother updates
         updateCommunityOverlays(network, limitedContacts);
         lastUpdateTimeRef.current = now;
       }
       animationFrameRef.current = requestAnimationFrame(updateDuringAnimation);
     };
 
-    // Start animation updates when physics is running
-    network.on('startStabilizing', () => {
-      // Only start if not already running
+    // Start continuous animation updates for community labels
+    const startContinuousUpdates = () => {
       if (!animationFrameRef.current) {
         updateDuringAnimation();
       }
-    });
+    };
 
-    // Stop animation updates when physics stabilizes
-    network.on('stabilizationIterationsDone', () => {
+    // Stop animation updates only when explicitly stopped
+    const stopContinuousUpdates = () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
-      // Do a final update after stabilization
+    };
+
+    // Start updates when stabilization begins and keep them running
+    network.on('startStabilizing', startContinuousUpdates);
+    
+    // Continue updates even after stabilization for smooth label following
+    network.on('stabilizationIterationsDone', () => {
+      // Keep animation running for label updates, just do a final positioning
       setTimeout(() => updateCommunityOverlays(network, limitedContacts), 100);
     });
+
+    // Always start continuous updates for label following
+    startContinuousUpdates();
 
     // Initial fit
     setTimeout(() => {
@@ -636,15 +645,6 @@ const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = 
         <CardTitle className="flex items-center justify-between">
           <span>Contact Network</span>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search contacts..."
-                value={searchQuery}
-                onChange={(e) => onSearchChange?.(e.target.value)}
-                className="w-48"
-              />
-            </div>
             <div className="flex items-center gap-2">
               <label className="text-sm text-muted-foreground">Max nodes:</label>
               <Input

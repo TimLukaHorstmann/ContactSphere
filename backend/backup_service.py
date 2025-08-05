@@ -22,10 +22,17 @@ class BackupService:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         try:
-            # Export all data
+            # Export all data with better error handling
+            logger.info("Starting backup data creation...")
+            
             contacts = self._export_contacts()
+            logger.info(f"Exported {len(contacts)} contacts")
+            
             edges = self._export_edges()
+            logger.info(f"Exported {len(edges)} edges")
+            
             sync_token = self.db.get_sync_token()
+            logger.info(f"Retrieved sync token: {'present' if sync_token else 'none'}")
             
             backup_data = {
                 "metadata": {
@@ -41,11 +48,11 @@ class BackupService:
                 "sync_token": sync_token
             }
             
-            logger.info(f"Backup data prepared with {len(contacts)} contacts and {len(edges)} edges")
+            logger.info(f"Backup data prepared successfully with {len(contacts)} contacts and {len(edges)} edges")
             return backup_data
             
         except Exception as e:
-            logger.error(f"Backup data creation failed: {e}")
+            logger.error(f"Backup data creation failed: {e}", exc_info=True)
             raise
     
     def restore_backup_from_data(self, backup_data: Dict[str, Any], clear_existing: bool = False) -> Dict[str, int]:
@@ -92,13 +99,23 @@ class BackupService:
     
     def _export_contacts(self) -> List[Dict[str, Any]]:
         """Export all contacts to a list of dictionaries"""
-        contacts = self.db.get_contacts()
-        return [contact.model_dump() for contact in contacts]
+        try:
+            contacts = self.db.get_contacts()
+            logger.info(f"Retrieved {len(contacts)} contacts from database")
+            return [contact.model_dump() for contact in contacts]
+        except Exception as e:
+            logger.error(f"Failed to export contacts: {e}", exc_info=True)
+            raise
     
     def _export_edges(self) -> List[Dict[str, Any]]:
         """Export all edges to a list of dictionaries"""
-        edges = self.db.get_edges()
-        return [edge.model_dump() for edge in edges]
+        try:
+            edges = self.db.get_edges()
+            logger.info(f"Retrieved {len(edges)} edges from database")
+            return [edge.model_dump() for edge in edges]
+        except Exception as e:
+            logger.error(f"Failed to export edges: {e}", exc_info=True)
+            raise
     
     def _clear_database(self):
         """Clear all data from the database"""

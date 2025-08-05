@@ -215,11 +215,13 @@ async def get_communities():
 async def download_backup():
     """Create and download a backup of all data"""
     try:
+        logger.info("Starting backup download request")
         backup_data = backup_service.create_backup_data()
+        logger.info("Backup data created successfully")
         return backup_data
         
     except Exception as e:
-        logger.error(f"Backup download failed: {e}")
+        logger.error(f"Backup download failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Backup download failed: {str(e)}")
 
 @app.post("/api/backup/restore")

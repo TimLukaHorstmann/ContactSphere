@@ -15,6 +15,8 @@ class ApiClient {
     this.removeContactTag = this.removeContactTag.bind(this);
     this.updateContactNotes = this.updateContactNotes.bind(this);
     this.getOrganizations = this.getOrganizations.bind(this);
+    this.downloadBackup = this.downloadBackup.bind(this);
+    this.restoreBackup = this.restoreBackup.bind(this);
   }
 
   private async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
@@ -119,8 +121,10 @@ class ApiClient {
 
   async downloadBackup(): Promise<void> {
     try {
+      console.log('Starting backup download...');
       const response = await this.fetchWithAuth('/api/backup/download');
       const data = await response.json();
+      console.log('Backup data received:', data.metadata);
       
       // Create filename with timestamp
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '_');
@@ -136,6 +140,7 @@ class ApiClient {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      console.log('Backup download completed:', filename);
     } catch (error) {
       console.error('Backup download failed:', error);
       throw error;
