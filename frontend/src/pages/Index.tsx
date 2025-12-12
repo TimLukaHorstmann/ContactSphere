@@ -4,8 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from 'sonner';
-import { RefreshCw, Users, Network, Search, Download, Upload } from 'lucide-react';
+import { RefreshCw, Users, Network, Search, Download, Upload, Menu } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import GraphViewNew from '@/components/GraphViewNew';
 import ListView from '@/components/ListView';
 import DetailPanel from '@/components/DetailPanel';
@@ -13,6 +20,7 @@ import { Contact, ContactEdge, LinkedInSyncResponse } from '@/types/api';
 import { api } from '@/lib/api';
 
 const Index = () => {
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showDetail, setShowDetail] = useState(false);
@@ -114,59 +122,95 @@ const Index = () => {
       {/* Header */}
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Network className="h-6 w-6 text-primary" />
-              <h1 className="text-2xl font-bold">ContactSphere</h1>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Network className="h-6 w-6 text-primary" />
+                <h1 className="text-2xl font-bold">ContactSphere</h1>
+              </div>
+              
+              {isMobile && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => authMutation.mutate()}>
+                      <Users className="h-4 w-4 mr-2" />
+                      Connect Google
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => syncMutation.mutate()}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Refresh Google
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => linkedinSyncMutation.mutate()}>
+                      <span className="mr-2 font-bold">in</span>
+                      Sync LinkedIn
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => backupMutation.mutate()}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Backup
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Search className="h-4 w-4 text-muted-foreground" />
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search contacts..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-64"
+                  className="pl-8 w-full md:w-64"
                 />
               </div>
               
-              <Button
-                onClick={() => authMutation.mutate()}
-                disabled={authMutation.isPending}
-                variant="outline"
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Connect Google
-              </Button>
-              
-              <Button
-                onClick={() => syncMutation.mutate()}
-                disabled={syncMutation.isPending}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-                Refresh Google
-              </Button>
-              
-              <Button
-                onClick={() => linkedinSyncMutation.mutate()}
-                disabled={linkedinSyncMutation.isPending}
-                variant="outline"
-              >
-                <svg className={`h-4 w-4 mr-2 ${linkedinSyncMutation.isPending ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                </svg>
-                Sync LinkedIn
-              </Button>
-              
-              <Button
-                onClick={() => backupMutation.mutate()}
-                disabled={backupMutation.isPending}
-                variant="secondary"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Backup
-              </Button>
+              {!isMobile && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => authMutation.mutate()}
+                    disabled={authMutation.isPending}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Connect
+                  </Button>
+                  
+                  <Button
+                    onClick={() => syncMutation.mutate()}
+                    disabled={syncMutation.isPending}
+                    size="sm"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                  
+                  <Button
+                    onClick={() => linkedinSyncMutation.mutate()}
+                    disabled={linkedinSyncMutation.isPending}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <span className="font-bold mr-2">in</span>
+                    Sync
+                  </Button>
+                  
+                  <Button
+                    onClick={() => backupMutation.mutate()}
+                    disabled={backupMutation.isPending}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Backup
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -207,7 +251,7 @@ const Index = () => {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="graph" className="space-y-4">
+        <Tabs defaultValue={isMobile ? "list" : "graph"} className="space-y-4">
           <TabsList>
             <TabsTrigger value="graph">Graph View</TabsTrigger>
             <TabsTrigger value="list">List View</TabsTrigger>

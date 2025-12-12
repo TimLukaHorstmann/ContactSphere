@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, RotateCcw, Maximize2, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface GraphViewProps {
   contacts: Contact[];
@@ -19,6 +20,7 @@ interface GraphViewProps {
 }
 
 const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = '', onSearchChange }: GraphViewProps) => {
+  const isMobile = useIsMobile();
   const networkRef = useRef<HTMLDivElement>(null);
   const networkInstance = useRef<Network | null>(null);
   const nodesDataSet = useRef<DataSet<any> | null>(null);
@@ -642,9 +644,9 @@ const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = 
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <span>Contact Network</span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
             <div className="flex items-center gap-2">
               <label className="text-sm text-muted-foreground">Max nodes:</label>
               <Input
@@ -657,7 +659,7 @@ const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = 
               />
             </div>
             <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full md:w-48">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
@@ -674,7 +676,7 @@ const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = 
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="relative p-0 h-[700px]">
+      <CardContent className={`relative p-0 ${isMobile ? 'h-[500px]' : 'h-[700px]'}`}>
         {/* Controls */}
         <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
           <Button variant="outline" size="sm" onClick={zoomIn} className="bg-white shadow-md">

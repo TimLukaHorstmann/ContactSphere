@@ -105,7 +105,7 @@ const DetailPanel = ({ contact, open, onClose }: DetailPanelProps) => {
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="!w-[800px] !max-w-[85vw] sm:!w-[1000px] sm:!max-w-[80vw] lg:!w-[1200px] lg:!max-w-[75vw] xl:!w-[1400px] xl:!max-w-[70vw] overflow-hidden">
+      <SheetContent className="w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl overflow-hidden flex flex-col">
         <SheetHeader>
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
@@ -125,8 +125,8 @@ const DetailPanel = ({ contact, open, onClose }: DetailPanelProps) => {
           </div>
         </SheetHeader>
 
-        <ScrollArea className="h-[calc(100vh-100px)] mt-6">
-          <div className="space-y-6">
+        <ScrollArea className="flex-1 mt-6 -mx-6 px-6">
+          <div className="space-y-6 pb-6">
             {/* Contact Info */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Contact Information</h3>
