@@ -1,6 +1,6 @@
 import { Contact, ContactEdge, SyncResponse, AuthResponse, OrganizationNode, LinkedInSyncResponse } from '@/types/api';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = '';
 
 class ApiClient {
   constructor() {

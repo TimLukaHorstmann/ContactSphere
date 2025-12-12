@@ -38,7 +38,7 @@ fi
 if [ ! -d "backend/.venv" ]; then
     echo "📦 Creating Python virtual environment..."
     cd backend
-    /Users/luka512/.local/bin/uv venv --python 3.10
+    uv venv --python 3.10
     cd ..
 fi
 
@@ -46,7 +46,7 @@ fi
 if [ ! -f "backend/.venv/lib/python*/site-packages/fastapi" ]; then
     echo "📦 Installing backend dependencies..."
     cd backend
-    /Users/luka512/.local/bin/uv sync
+    uv sync
     cd ..
 fi
 

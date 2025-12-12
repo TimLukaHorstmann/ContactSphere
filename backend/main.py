@@ -23,7 +23,7 @@ app = FastAPI(title="ContactSphere API", version="1.0.0")
 # CORS middleware for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080", "http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -58,14 +58,15 @@ async def google_auth_start():
 @app.get("/auth/google/callback")
 async def google_auth_callback(code: str, state: str = None):
     """Handle Google OAuth callback"""
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:8080')
     try:
         credentials = google_auth.exchange_code(code)
         # Store credentials in session/memory for this demo
         google_auth.store_credentials(credentials)
-        return RedirectResponse(url="http://localhost:8080?auth=success")
+        return RedirectResponse(url=f"{frontend_url}?auth=success")
     except Exception as e:
         logger.error(f"Auth callback failed: {e}")
-        return RedirectResponse(url="http://localhost:8080?auth=error")
+        return RedirectResponse(url=f"{frontend_url}?auth=error")
 
 @app.post("/api/sync")
 async def sync_contacts() -> SyncResponse:
