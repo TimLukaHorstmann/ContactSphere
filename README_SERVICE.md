@@ -33,6 +33,14 @@ You can run ContactSphere as a background service using systemd.
    sudo systemctl status contactsphere
    ```
 
+6. **To Stop the Service**
+sudo systemctl stop contactsphere
+
+7. **To stop it and prevent it from starting on boot**
+sudo systemctl disable --now contactsphere
+sudo systemctl disable --now contactsphere
+
+
 ## Viewing Logs
 
 To see the application logs:

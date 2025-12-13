@@ -1,6 +1,8 @@
 import requests
 import os
 import logging
+import unicodedata
+import re
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 from dotenv import load_dotenv
@@ -104,6 +106,7 @@ class LinkedInService:
         # Create efficient lookup dictionaries
         email_lookup = {}
         name_lookup = {}
+        normalized_name_lookup = {}
         fuzzy_name_lookup = {}
         
         for contact in all_contacts:
@@ -114,6 +117,11 @@ class LinkedInService:
             # Full name lookup (exact match)
             name_key = contact.name.lower().strip()
             name_lookup[name_key] = contact
+
+            # Normalized name lookup
+            norm_name = self._normalize_name(contact.name)
+            if norm_name:
+                normalized_name_lookup[norm_name] = contact
             
             # Fuzzy name lookup (for partial matching)
             name_parts = name_key.split()
@@ -124,7 +132,7 @@ class LinkedInService:
                     fuzzy_name_lookup[fuzzy_key] = []
                 fuzzy_name_lookup[fuzzy_key].append(contact)
         
-        logger.info(f"Built lookups: {len(email_lookup)} emails, {len(name_lookup)} names, {len(fuzzy_name_lookup)} fuzzy names")
+        logger.info(f"Built lookups: {len(email_lookup)} emails, {len(name_lookup)} names, {len(normalized_name_lookup)} normalized names, {len(fuzzy_name_lookup)} fuzzy names")
         
         imported = 0
         updated = 0
@@ -134,7 +142,7 @@ class LinkedInService:
             try:
                 # Try to match with existing contact using fast lookups
                 existing_contact = self._find_matching_contact_fast(
-                    linkedin_contact, email_lookup, name_lookup, fuzzy_name_lookup
+                    linkedin_contact, email_lookup, name_lookup, normalized_name_lookup, fuzzy_name_lookup
                 )
                 
                 if existing_contact:
@@ -166,9 +174,40 @@ class LinkedInService:
             created_at=start_time
         )
 
+    def _normalize_name(self, name: str) -> str:
+        """Normalize name by removing accents, punctuation, and titles"""
+        if not name:
+            return ""
+        
+        # 1. Lowercase
+        name = name.lower()
+        
+        # 2. Remove accents
+        name = unicodedata.normalize('NFKD', name).encode('ASCII', 'ignore').decode('utf-8')
+        
+        # 3. Remove punctuation (replace with space)
+        name = re.sub(r'[^\w\s]', ' ', name)
+        
+        # 4. Remove titles and suffixes
+        parts = name.split()
+        cleaned_parts = []
+        
+        # Common titles and suffixes to ignore
+        ignore_terms = {
+            "dr", "mr", "mrs", "ms", "prof", "phd", "cfa", "mba", "md", "msc", "bsc", "eng", 
+            "jr", "sr", "ii", "iii", "iv", "esq"
+        }
+        
+        for part in parts:
+            if part not in ignore_terms:
+                cleaned_parts.append(part)
+                
+        return " ".join(cleaned_parts).strip()
+
     def _find_matching_contact_fast(self, linkedin_contact: Dict[str, Any], 
                                    email_lookup: Dict[str, Contact], 
-                                   name_lookup: Dict[str, Contact], 
+                                   name_lookup: Dict[str, Contact],
+                                   normalized_name_lookup: Dict[str, Contact], 
                                    fuzzy_name_lookup: Dict[str, List[Contact]]) -> Optional[Contact]:
         """Fast contact matching using pre-built lookup dictionaries"""
         first_name = linkedin_contact.get("First Name", "").strip()
@@ -195,8 +234,19 @@ class LinkedInService:
             # If no company info, still match by name
             if not company or not contact.organization:
                 return contact
+
+        # Strategy 3: Match by normalized name
+        norm_name = self._normalize_name(f"{first_name} {last_name}")
+        contact = normalized_name_lookup.get(norm_name)
+        if contact:
+            # If company also matches, it's very likely the same person
+            if company and contact.organization and company.lower() in contact.organization.lower():
+                return contact
+            # If no company info, still match by name
+            if not company or not contact.organization:
+                return contact
         
-        # Strategy 3: Fuzzy name matching (still fast - O(1) lookup + small list iteration)
+        # Strategy 4: Fuzzy name matching (still fast - O(1) lookup + small list iteration)
         fuzzy_key = f"{first_name.lower()}_{last_name.lower()}"
         fuzzy_matches = fuzzy_name_lookup.get(fuzzy_key, [])
         
