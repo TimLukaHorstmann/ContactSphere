@@ -38,7 +38,7 @@ backup_service = BackupService(db)
 
 @app.on_event("startup")
 async def startup():
-    db.init_db()
+    await db.init_db()
     logger.info("ContactSphere API started")
 
 @app.get("/")
@@ -133,7 +133,7 @@ async def sync_linkedin_contacts() -> LinkedInSyncResponse:
                 # Use a small buffer time to ensure we catch all updates
                 since_time = (result.created_at or datetime.now(timezone.utc))
                 
-                updated_contacts = db.get_contacts_updated_since(since_time)
+                updated_contacts = await db.get_contacts_updated_since(since_time)
                 
                 # Filter contacts that have a Google ID
                 contacts_to_update = [
@@ -164,7 +164,7 @@ async def sync_linkedin_contacts() -> LinkedInSyncResponse:
 async def get_contacts(search: Optional[str] = None) -> List[Contact]:
     """Get all contacts with optional search"""
     try:
-        contacts = db.get_contacts(search_query=search)
+        contacts = await db.get_contacts(search_query=search)
         return contacts
     except Exception as e:
         logger.error(f"Get contacts failed: {e}")
@@ -174,7 +174,7 @@ async def get_contacts(search: Optional[str] = None) -> List[Contact]:
 async def get_uncategorized_contacts() -> List[Contact]:
     """Get contacts missing relationship data"""
     try:
-        contacts = db.get_uncategorized_contacts()
+        contacts = await db.get_uncategorized_contacts()
         return contacts or []
     except Exception as e:
         logger.error(f"Get uncategorized contacts failed: {e}")
@@ -184,7 +184,7 @@ async def get_uncategorized_contacts() -> List[Contact]:
 async def get_contact(contact_id: str) -> Contact:
     """Get specific contact by ID"""
     try:
-        contact = db.get_contact_by_id(contact_id)
+        contact = await db.get_contact_by_id(contact_id)
         if not contact:
             raise HTTPException(status_code=404, detail="Contact not found")
         return contact
@@ -198,7 +198,7 @@ async def get_contact(contact_id: str) -> Contact:
 async def get_edges() -> List[ContactEdge]:
     """Get all relationship edges"""
     try:
-        edges = db.get_edges()
+        edges = await db.get_edges()
         logger.info(f"Retrieved {len(edges)} edges from database")
         return edges or []
     except Exception as e:
@@ -209,12 +209,12 @@ async def get_edges() -> List[ContactEdge]:
 async def add_contact_tag(contact_id: str, tag_request: TagRequest):
     """Add manual tag to contact"""
     try:
-        db.add_contact_tag(contact_id, tag_request.tag)
+        await db.add_contact_tag(contact_id, tag_request.tag)
         
         # Sync to Google if authenticated
         if google_auth.has_credentials():
             try:
-                contact = db.get_contact_by_id(contact_id)
+                contact = await db.get_contact_by_id(contact_id)
                 if contact:
                     contacts_service.update_contact_google(
                         google_auth.get_credentials(), 
@@ -232,12 +232,12 @@ async def add_contact_tag(contact_id: str, tag_request: TagRequest):
 async def remove_contact_tag(contact_id: str, tag: str):
     """Remove tag from contact"""
     try:
-        db.remove_contact_tag(contact_id, tag)
+        await db.remove_contact_tag(contact_id, tag)
         
         # Sync to Google if authenticated
         if google_auth.has_credentials():
             try:
-                contact = db.get_contact_by_id(contact_id)
+                contact = await db.get_contact_by_id(contact_id)
                 if contact:
                     contacts_service.update_contact_google(
                         google_auth.get_credentials(), 
@@ -256,13 +256,13 @@ async def update_contact_notes(contact_id: str, notes_request: NotesRequest):
     """Update notes for contact"""
     try:
         # Update local DB first
-        db.update_contact_notes(contact_id, notes_request.notes)
+        await db.update_contact_notes(contact_id, notes_request.notes)
         
         # Try to update in Google Contacts if authenticated
         if google_auth.has_credentials():
             try:
                 # Fetch the full updated contact to sync all fields
-                contact = db.get_contact_by_id(contact_id)
+                contact = await db.get_contact_by_id(contact_id)
                 if contact:
                     contacts_service.update_contact_google(
                         google_auth.get_credentials(), 
@@ -280,7 +280,7 @@ async def update_contact_notes(contact_id: str, notes_request: NotesRequest):
 async def get_graph_stats():
     """Get graph statistics"""
     try:
-        stats = db.get_graph_statistics()
+        stats = await db.get_graph_statistics()
         return stats
     except Exception as e:
         logger.error(f"Get graph stats failed: {e}")
@@ -290,7 +290,7 @@ async def get_graph_stats():
 async def get_shortest_path(source_id: str, target_id: str):
     """Find shortest path between two contacts"""
     try:
-        path = db.find_shortest_path(source_id, target_id)
+        path = await db.find_shortest_path(source_id, target_id)
         if not path:
             raise HTTPException(status_code=404, detail="No path found between contacts")
         return path
@@ -304,7 +304,7 @@ async def get_shortest_path(source_id: str, target_id: str):
 async def get_communities():
     """Get community detection results"""
     try:
-        communities = db.get_community_detection()
+        communities = await db.get_community_detection()
         return communities
     except Exception as e:
         logger.error(f"Get communities failed: {e}")
@@ -315,7 +315,7 @@ async def download_backup():
     """Create and download a backup of all data"""
     try:
         logger.info("Starting backup download request")
-        backup_data = backup_service.create_backup_data()
+        backup_data = await backup_service.create_backup_data()
         logger.info("Backup data created successfully")
         return backup_data
         
@@ -327,7 +327,7 @@ async def download_backup():
 async def restore_backup(backup_data: dict, clear_existing: bool = False):
     """Restore data from uploaded backup data"""
     try:
-        result = backup_service.restore_backup_from_data(backup_data, clear_existing)
+        result = await backup_service.restore_backup_from_data(backup_data, clear_existing)
         return {
             "status": "success",
             "message": "Data restored successfully",
@@ -341,7 +341,7 @@ async def restore_backup(backup_data: dict, clear_existing: bool = False):
 async def get_organizations() -> List[OrganizationNode]:
     """Get all organization nodes"""
     try:
-        organizations = db.get_organizations()
+        organizations = await db.get_organizations()
         return organizations or []
     except Exception as e:
         logger.error(f"Get organizations failed: {e}")

@@ -10,6 +10,12 @@
     "test": "cd backend && python -m pytest tests/ -v"
   },
   "devDependencies": {
+    "@types/react-window": "^2.0.0",
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "react-force-graph-2d": "^1.29.0",
+    "react-virtualized-auto-sizer": "^1.0.26",
+    "react-window": "^2.2.3"
   }
 }

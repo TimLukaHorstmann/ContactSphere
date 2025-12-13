@@ -1,9 +1,9 @@
-from neo4j import GraphDatabase as Neo4jDriver
+from neo4j import AsyncGraphDatabase as Neo4jDriver
 from typing import List, Optional, Dict, Any
 import json
 import os
 from datetime import datetime
-from models import Contact, ContactEdge, OrganizationNode, OrganizationNode
+from models import Contact, ContactEdge, OrganizationNode
 
 class GraphDatabase:
     def __init__(self, uri: str = None, user: str = None, password: str = None):
@@ -20,33 +20,33 @@ class GraphDatabase:
             )
         )
         
-    def close(self):
+    async def close(self):
         """Close the database connection"""
-        self.driver.close()
+        await self.driver.close()
         
-    def init_db(self):
+    async def init_db(self):
         """Initialize database constraints and indexes"""
-        with self.driver.session() as session:
+        async with self.driver.session() as session:
             # Create constraints
-            session.run("CREATE CONSTRAINT contact_id IF NOT EXISTS FOR (c:Contact) REQUIRE c.id IS UNIQUE")
+            await session.run("CREATE CONSTRAINT contact_id IF NOT EXISTS FOR (c:Contact) REQUIRE c.id IS UNIQUE")
             
             # Create indexes for performance
-            session.run("CREATE INDEX contact_name IF NOT EXISTS FOR (c:Contact) ON (c.name)")
-            session.run("CREATE INDEX contact_email IF NOT EXISTS FOR (c:Contact) ON (c.email)")
-            session.run("CREATE INDEX contact_organization IF NOT EXISTS FOR (c:Contact) ON (c.organization)")
+            await session.run("CREATE INDEX contact_name IF NOT EXISTS FOR (c:Contact) ON (c.name)")
+            await session.run("CREATE INDEX contact_email IF NOT EXISTS FOR (c:Contact) ON (c.email)")
+            await session.run("CREATE INDEX contact_organization IF NOT EXISTS FOR (c:Contact) ON (c.organization)")
             
-    def upsert_contact(self, contact: Contact) -> bool:
+    async def upsert_contact(self, contact: Contact) -> bool:
         """Insert or update contact, returns True if new contact"""
-        with self.driver.session() as session:
+        async with self.driver.session() as session:
             # Check if contact exists
-            result = session.run(
+            result = await session.run(
                 "MATCH (c:Contact {id: $id}) RETURN c",
                 id=contact.id
             )
-            is_new = not result.single()
+            is_new = not await result.single()
             
             # Upsert contact
-            session.run("""
+            await session.run("""
                 MERGE (c:Contact {id: $id})
                 ON CREATE SET c.created_at = datetime()
                 SET c.name = $name,
@@ -76,28 +76,28 @@ class GraphDatabase:
             
             return is_new
 
-    def update_last_google_sync(self, contact_id: str):
+    async def update_last_google_sync(self, contact_id: str):
         """Update the last_google_sync timestamp for a contact"""
-        with self.driver.session() as session:
-            session.run("""
+        async with self.driver.session() as session:
+            await session.run("""
                 MATCH (c:Contact {id: $id})
                 SET c.last_google_sync = datetime()
             """, id=contact_id)
 
-    def update_last_google_sync_batch(self, contact_ids: List[str]):
+    async def update_last_google_sync_batch(self, contact_ids: List[str]):
         """Batch update the last_google_sync timestamp"""
         if not contact_ids:
             return
-        with self.driver.session() as session:
-            session.run("""
+        async with self.driver.session() as session:
+            await session.run("""
                 MATCH (c:Contact)
                 WHERE c.id IN $ids
                 SET c.last_google_sync = datetime()
             """, ids=contact_ids)
             
-    def get_contacts_updated_since(self, since: datetime) -> List[Contact]:
+    async def get_contacts_updated_since(self, since: datetime) -> List[Contact]:
         """Get contacts updated since a specific time"""
-        with self.driver.session() as session:
+        async with self.driver.session() as session:
             result = session.run("""
                 MATCH (c:Contact)
                 WHERE c.updated_at >= $since
@@ -106,11 +106,11 @@ class GraphDatabase:
             
             return [self._node_to_contact(record['c']) for record in result]
 
-    def get_contacts(self, search_query: Optional[str] = None) -> List[Contact]:
+    async def get_contacts(self, search_query: Optional[str] = None) -> List[Contact]:
         """Get all contacts with optional search"""
-        with self.driver.session() as session:
+        async with self.driver.session() as session:
             if search_query:
-                result = session.run("""
+                result = await session.run("""
                     MATCH (c:Contact)
                     WHERE toLower(c.name) CONTAINS toLower($search_term)
                        OR toLower(coalesce(c.email, '')) CONTAINS toLower($search_term)
@@ -129,45 +129,45 @@ class GraphDatabase:
                     ORDER BY c.name
                 """, search_term=search_query)
             else:
-                result = session.run("""
+                result = await session.run("""
                     MATCH (c:Contact)
                     RETURN c
                     ORDER BY c.name
                 """)
             
-            return [self._node_to_contact(record["c"]) for record in result]
+            return [self._node_to_contact(record["c"]) for record in await result.data()]
             
-    def get_contact_by_id(self, contact_id: str) -> Optional[Contact]:
+    async def get_contact_by_id(self, contact_id: str) -> Optional[Contact]:
         """Get contact by ID"""
-        with self.driver.session() as session:
-            result = session.run(
+        async with self.driver.session() as session:
+            result = await session.run(
                 "MATCH (c:Contact {id: $id}) RETURN c",
                 id=contact_id
             )
-            record = result.single()
+            record = await result.single()
             return self._node_to_contact(record["c"]) if record else None
             
-    def get_uncategorized_contacts(self) -> List[Contact]:
+    async def get_uncategorized_contacts(self) -> List[Contact]:
         """Get contacts missing relationship data"""
-        with self.driver.session() as session:
-            result = session.run("""
+        async with self.driver.session() as session:
+            result = await session.run("""
                 MATCH (c:Contact)
                 WHERE coalesce(c.uncategorized, false) = true
                 RETURN c
                 ORDER BY c.name
             """)
-            return [self._node_to_contact(record["c"]) for record in result]
+            return [self._node_to_contact(record["c"]) for record in await result.data()]
             
-    def add_edge(self, edge: ContactEdge):
+    async def add_edge(self, edge: ContactEdge):
         """Add relationship edge, creating organization nodes for hub connections"""
-        with self.driver.session() as session:
+        async with self.driver.session() as session:
             # Check if target is an organization hub
             if edge.target_id.startswith("org_") and edge.metadata and edge.metadata.get("is_hub_connection"):
                 # Create organization node if it doesn't exist
                 org_name = edge.metadata.get("organization", "Unknown")
                 company_size = edge.metadata.get("company_size", 0)
                 
-                session.run("""
+                await session.run("""
                     MERGE (org:Organization {id: $org_id})
                     ON CREATE SET org.name = $org_name,
                                   org.employee_count = $company_size,
@@ -176,7 +176,7 @@ class GraphDatabase:
                 """, org_id=edge.target_id, org_name=org_name, company_size=company_size)
                 
                 # Connect contact to organization
-                session.run("""
+                await session.run("""
                     MATCH (source:Contact {id: $source_id})
                     MATCH (target:Organization {id: $target_id})
                     MERGE (source)-[r:WORKS_AT]->(target)
@@ -193,7 +193,7 @@ class GraphDatabase:
             else:
                 # Regular contact-to-contact relationship
                 rel_type = edge.relationship_type
-                session.run(f"""
+                await session.run(f"""
                     MATCH (source:Contact {{id: $source_id}})
                     MATCH (target:Contact {{id: $target_id}})
                     MERGE (source)-[r:{rel_type}]->(target)
@@ -210,123 +210,147 @@ class GraphDatabase:
                     metadata=json.dumps(edge.metadata) if edge.metadata else None
                 )
             
-    def get_edges(self) -> List[ContactEdge]:
+    async def get_edges(self) -> List[ContactEdge]:
         """Get all relationship edges including organization connections"""
-        with self.driver.session() as session:
+        async with self.driver.session() as session:
             # Get contact-to-contact relationships
-            result = session.run("""
+            result = await session.run("""
                 MATCH (source:Contact)-[r]->(target:Contact)
                 WHERE r.relationship_type IS NOT NULL
-                RETURN elementId(r) as edge_id, r, source.id as source_id, target.id as target_id
+                RETURN elementId(r) as edge_id, 
+                       r.relationship_type as relationship_type,
+                       r.strength as strength,
+                       r.metadata as metadata,
+                       source.id as source_id, 
+                       target.id as target_id
             """)
             
             edges = []
-            for record in result:
-                rel = record["r"]
+            for record in await result.data():
+                # Handle metadata
+                metadata = None
+                if record.get("metadata"):
+                    try:
+                        metadata = json.loads(record["metadata"]) if isinstance(record["metadata"], str) else record["metadata"]
+                    except:
+                        metadata = None
+
                 edge = ContactEdge(
                     id=record["edge_id"],
                     source_id=record["source_id"],
                     target_id=record["target_id"],
-                    relationship_type=rel["relationship_type"],
-                    strength=rel.get("strength", 1.0),
-                    metadata=json.loads(rel["metadata"]) if rel.get("metadata") else None
+                    relationship_type=record["relationship_type"],
+                    strength=record["strength"] if record["strength"] is not None else 1.0,
+                    metadata=metadata
                 )
                 edges.append(edge)
             
             # Get contact-to-organization relationships
-            result = session.run("""
+            result = await session.run("""
                 MATCH (source:Contact)-[r]->(target:Organization)
-                RETURN elementId(r) as edge_id, r, source.id as source_id, target.id as target_id
+                RETURN elementId(r) as edge_id, 
+                       r.relationship_type as relationship_type,
+                       r.strength as strength,
+                       r.metadata as metadata,
+                       source.id as source_id, 
+                       target.id as target_id
             """)
             
-            for record in result:
-                rel = record["r"]
+            for record in await result.data():
+                # Handle metadata
+                metadata = None
+                if record.get("metadata"):
+                    try:
+                        metadata = json.loads(record["metadata"]) if isinstance(record["metadata"], str) else record["metadata"]
+                    except:
+                        metadata = None
+
                 edge = ContactEdge(
                     id=record["edge_id"],
                     source_id=record["source_id"],
                     target_id=record["target_id"],
-                    relationship_type=rel.get("relationship_type", "WORKS_AT"),
-                    strength=rel.get("strength", 1.0),
-                    metadata=json.loads(rel["metadata"]) if rel.get("metadata") else None
+                    relationship_type=record.get("relationship_type") or "WORKS_AT",
+                    strength=record["strength"] if record["strength"] is not None else 1.0,
+                    metadata=metadata
                 )
                 edges.append(edge)
             
             return edges
             
-    def add_contact_tag(self, contact_id: str, tag: str):
+    async def add_contact_tag(self, contact_id: str, tag: str):
         """Add tag to contact"""
-        with self.driver.session() as session:
-            session.run("""
+        async with self.driver.session() as session:
+            await session.run("""
                 MATCH (c:Contact {id: $contact_id})
                 SET c.tags = coalesce(c.tags, []) + CASE WHEN $tag IN coalesce(c.tags, []) THEN [] ELSE [$tag] END
             """, contact_id=contact_id, tag=tag)
             
-    def remove_contact_tag(self, contact_id: str, tag: str):
+    async def remove_contact_tag(self, contact_id: str, tag: str):
         """Remove tag from contact"""
-        with self.driver.session() as session:
-            session.run("""
+        async with self.driver.session() as session:
+            await session.run("""
                 MATCH (c:Contact {id: $contact_id})
                 SET c.tags = [t IN coalesce(c.tags, []) WHERE t <> $tag]
             """, contact_id=contact_id, tag=tag)
             
-    def set_sync_token(self, token: str):
+    async def set_sync_token(self, token: str):
         """Store sync token"""
-        with self.driver.session() as session:
-            session.run("""
+        async with self.driver.session() as session:
+            await session.run("""
                 MERGE (s:SyncMeta {key: 'sync_token'})
                 SET s.value = $token, s.updated_at = datetime()
             """, token=token)
             
-    def get_sync_token(self) -> Optional[str]:
+    async def get_sync_token(self) -> Optional[str]:
         """Get sync token"""
-        with self.driver.session() as session:
-            result = session.run("""
+        async with self.driver.session() as session:
+            result = await session.run("""
                 MATCH (s:SyncMeta)
                 WHERE coalesce(s.key, '') = 'sync_token'
                 RETURN coalesce(s.value, null) as token
             """)
-            record = result.single()
+            record = await result.single()
             return record["token"] if record else None
             
-    def clear_all_edges(self):
+    async def clear_all_edges(self):
         """Clear all relationship edges"""
-        with self.driver.session() as session:
-            session.run("""
+        async with self.driver.session() as session:
+            await session.run("""
                 MATCH ()-[r]-()
                 WHERE r.relationship_type IS NOT NULL
                 DELETE r
             """)
             
-    def get_graph_statistics(self) -> Dict[str, Any]:
+    async def get_graph_statistics(self) -> Dict[str, Any]:
         """Get graph statistics for dashboard"""
-        with self.driver.session() as session:
+        async with self.driver.session() as session:
             # Count nodes and relationships
-            stats_result = session.run("""
+            stats_result = await session.run("""
                 MATCH (c:Contact)
                 OPTIONAL MATCH ()-[r]-()
                 WHERE r.relationship_type IS NOT NULL
                 RETURN count(DISTINCT c) as contact_count, count(DISTINCT r) as relationship_count
             """)
-            stats = stats_result.single()
+            stats = await stats_result.single()
             
             # Get relationship type distribution
-            rel_types_result = session.run("""
+            rel_types_result = await session.run("""
                 MATCH ()-[r]-()
                 WHERE r.relationship_type IS NOT NULL
                 RETURN r.relationship_type as type, count(*) as count
                 ORDER BY count DESC
             """)
-            relationship_types = {record["type"]: record["count"] for record in rel_types_result}
+            relationship_types = {record["type"]: record["count"] for record in await rel_types_result.data()}
             
             # Get top connected nodes
-            top_connected_result = session.run("""
+            top_connected_result = await session.run("""
                 MATCH (c:Contact)-[r:CONNECTED]-()
                 RETURN c.name as name, count(r) as connections
                 ORDER BY connections DESC
                 LIMIT 10
             """)
             top_connected = [{"name": record["name"], "connections": record["connections"]} 
-                           for record in top_connected_result]
+                           for record in await top_connected_result.data()]
             
             return {
                 "contact_count": stats["contact_count"],
@@ -335,17 +359,17 @@ class GraphDatabase:
                 "top_connected": top_connected
             }
             
-    def find_shortest_path(self, source_id: str, target_id: str) -> List[Dict[str, Any]]:
+    async def find_shortest_path(self, source_id: str, target_id: str) -> List[Dict[str, Any]]:
         """Find shortest path between two contacts"""
-        with self.driver.session() as session:
-            result = session.run("""
+        async with self.driver.session() as session:
+            result = await session.run("""
                 MATCH (source:Contact {id: $source_id}), (target:Contact {id: $target_id})
                 MATCH path = shortestPath((source)-[:CONNECTED*]-(target))
                 RETURN [node in nodes(path) | {id: node.id, name: node.name}] as nodes,
                        [rel in relationships(path) | rel.relationship_type] as relationships
             """, source_id=source_id, target_id=target_id)
             
-            record = result.single()
+            record = await result.single()
             if record:
                 return {
                     "nodes": record["nodes"],
@@ -353,11 +377,11 @@ class GraphDatabase:
                 }
             return None
             
-    def get_community_detection(self) -> List[Dict[str, Any]]:
+    async def get_community_detection(self) -> List[Dict[str, Any]]:
         """Get communities using basic clustering"""
-        with self.driver.session() as session:
+        async with self.driver.session() as session:
             # Simple community detection based on shared organizations
-            result = session.run("""
+            result = await session.run("""
                 MATCH (c:Contact)
                 WHERE c.organization IS NOT NULL
                 RETURN c.organization as community, collect({id: c.id, name: c.name}) as members
@@ -365,7 +389,7 @@ class GraphDatabase:
             """)
             
             communities = []
-            for record in result:
+            for record in await result.data():
                 if len(record["members"]) > 1:  # Only communities with more than 1 member
                     communities.append({
                         "name": record["community"],
@@ -375,25 +399,25 @@ class GraphDatabase:
             
             return communities
             
-    def update_contact_notes(self, contact_id: str, notes: str):
+    async def update_contact_notes(self, contact_id: str, notes: str):
         """Update notes for contact"""
-        with self.driver.session() as session:
-            session.run("""
+        async with self.driver.session() as session:
+            await session.run("""
                 MATCH (c:Contact {id: $contact_id})
                 SET c.notes = $notes, c.updated_at = datetime()
             """, contact_id=contact_id, notes=notes)
             
-    def get_organizations(self) -> List[OrganizationNode]:
+    async def get_organizations(self) -> List[OrganizationNode]:
         """Get all organization nodes"""
-        with self.driver.session() as session:
-            result = session.run("""
+        async with self.driver.session() as session:
+            result = await session.run("""
                 MATCH (org:Organization)
                 RETURN org
                 ORDER BY org.name
             """)
             
             organizations = []
-            for record in result:
+            for record in await result.data():
                 node = record["org"]
                 org = OrganizationNode(
                     id=node["id"],

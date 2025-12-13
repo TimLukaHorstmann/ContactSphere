@@ -13,7 +13,7 @@ import {
 import { toast } from 'sonner';
 import { RefreshCw, Users, Network, Search, Download, Upload, Menu } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import GraphViewNew from '@/components/GraphViewNew';
+import GraphView from '@/components/GraphView';
 import ListView from '@/components/ListView';
 import DetailPanel from '@/components/DetailPanel';
 import { Contact, ContactEdge, LinkedInSyncResponse } from '@/types/api';
@@ -267,7 +267,7 @@ const Index = () => {
           </TabsList>
           
           <TabsContent value="graph">
-            <GraphViewNew
+            <GraphView
               contacts={contacts}
               edges={edges}
               onContactSelect={handleContactSelect}

@@ -2,14 +2,15 @@ from typing import List, Dict, Set, Optional
 from models import Contact, ContactEdge, OrganizationNode
 import re
 import uuid
+import os
 
 class RelationshipInference:
     """Infer relationships between contacts based on shared attributes"""
     
     def __init__(self):
         # Company size thresholds for relationship quality
-        self.small_company_threshold = 15  # Close colleagues
-        self.medium_company_threshold = 100  # Coworkers
+        self.small_company_threshold = int(os.getenv('SMALL_COMPANY_THRESHOLD', 15))  # Close colleagues
+        self.medium_company_threshold = int(os.getenv('MEDIUM_COMPANY_THRESHOLD', 100))  # Coworkers
         # Above 100: acquaintances (low priority)
         
     def infer_all_relationships(self, contacts: List[Contact]) -> List[ContactEdge]:
@@ -22,17 +23,28 @@ class RelationshipInference:
         domain_groups = self._group_by_email_domain(contacts)
         birthday_groups = self._group_by_birthday(contacts)
         school_groups = self._group_by_schools(contacts)
+        tag_groups = self._group_by_tags(contacts)
         
         # Generate edges with smart company relationship handling
         edges.extend(self._create_company_relationships(org_groups))
         edges.extend(self._create_location_relationships(city_groups))
-        edges.extend(self._create_location_relationships(city_groups))
         edges.extend(self._create_edges_from_groups(domain_groups, 'WORKS_WITH', 0.7))
         edges.extend(self._create_edges_from_groups(birthday_groups, 'SHARES_BIRTHDAY', 0.3))
         edges.extend(self._create_edges_from_groups(school_groups, 'ALUMNI_OF', 0.6))
+        edges.extend(self._create_edges_from_groups(tag_groups, 'SHARED_INTEREST', 0.5))
         
         return edges
     
+    def _group_by_tags(self, contacts: List[Contact]) -> Dict[str, List[Contact]]:
+        """Group contacts by tags"""
+        groups = {}
+        for contact in contacts:
+            for tag in contact.tags:
+                if tag not in groups:
+                    groups[tag] = []
+                groups[tag].append(contact)
+        return {k: v for k, v in groups.items() if len(v) > 1}
+
     def _group_by_attribute(self, contacts: List[Contact], attr: str) -> Dict[str, List[Contact]]:
         """Group contacts by a specific attribute, including previous_organization"""
         groups = {}

@@ -33,7 +33,7 @@ class ContactsService:
 
         imported = 0
         updated = 0
-        sync_token = self.db.get_sync_token()
+        sync_token = await self.db.get_sync_token()
         
         # Fetch contacts with pagination
         contacts = []
@@ -59,7 +59,7 @@ class ContactsService:
                 for person in connections:
                     contact = self._parse_contact(person, groups_map)
                     if contact:
-                        is_new = self.db.upsert_contact(contact)
+                        is_new = await self.db.upsert_contact(contact)
                         if is_new:
                             imported += 1
                         else:
@@ -71,7 +71,7 @@ class ContactsService:
                     # Store new sync token
                     new_sync_token = results.get('nextSyncToken')
                     if new_sync_token:
-                        self.db.set_sync_token(new_sync_token)
+                        await self.db.set_sync_token(new_sync_token)
                     break
                     
             except Exception as e:
@@ -79,15 +79,15 @@ class ContactsService:
                 break
         
         # Infer relationships
-        self._infer_relationships(contacts)
+        await self._infer_relationships(contacts)
         
-        total_contacts = len(self.db.get_contacts())
+        total_contacts = len(await self.db.get_contacts())
         
         return SyncResponse(
             imported=imported,
             updated=updated,
             total_contacts=total_contacts,
-            sync_token=self.db.get_sync_token()
+            sync_token=await self.db.get_sync_token()
         )
 
     def batch_update_contacts_google(self, credentials: Credentials, contacts: List[Contact]) -> int:
@@ -548,17 +548,17 @@ class ContactsService:
         """Check if contact lacks relationship-inferrable data"""
         return not any([organization, city, country, email])
 
-    def _infer_relationships(self, contacts: List[Contact]):
+    async def _infer_relationships(self, contacts: List[Contact]):
         """Infer relationships between contacts and store edges"""
         logger.info(f"Starting relationship inference for {len(contacts)} contacts")
         
         # Clear existing edges to avoid duplicates
-        self.db.clear_all_edges()
+        await self.db.clear_all_edges()
         
         edges = self.relationship_inference.infer_all_relationships(contacts)
         logger.info(f"Inferred {len(edges)} relationships")
         
         for edge in edges:
-            self.db.add_edge(edge)
+            await self.db.add_edge(edge)
             
         logger.info(f"Stored {len(edges)} edges in database")
