@@ -129,7 +129,14 @@ const DetailPanel = ({ contact, open, onClose }: DetailPanelProps) => {
           <div className="space-y-6 pb-6">
             {/* Contact Info */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Contact Information</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Contact Information</h3>
+                {contact.last_google_sync && (
+                  <Badge variant="outline" className="text-xs text-green-600 border-green-200 bg-green-50">
+                    Synced to Google
+                  </Badge>
+                )}
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {contact.email && (

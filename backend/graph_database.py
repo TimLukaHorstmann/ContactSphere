@@ -70,11 +70,42 @@ class GraphDatabase:
                     c.linkedin_position = $linkedin_position,
                     c.linkedin_connected_date = $linkedin_connected_date,
                     c.last_linkedin_sync = $last_linkedin_sync,
+                    c.last_google_sync = $last_google_sync,
                     c.updated_at = datetime()
             """, **self._contact_to_dict(contact))
             
             return is_new
+
+    def update_last_google_sync(self, contact_id: str):
+        """Update the last_google_sync timestamp for a contact"""
+        with self.driver.session() as session:
+            session.run("""
+                MATCH (c:Contact {id: $id})
+                SET c.last_google_sync = datetime()
+            """, id=contact_id)
+
+    def update_last_google_sync_batch(self, contact_ids: List[str]):
+        """Batch update the last_google_sync timestamp"""
+        if not contact_ids:
+            return
+        with self.driver.session() as session:
+            session.run("""
+                MATCH (c:Contact)
+                WHERE c.id IN $ids
+                SET c.last_google_sync = datetime()
+            """, ids=contact_ids)
             
+    def get_contacts_updated_since(self, since: datetime) -> List[Contact]:
+        """Get contacts updated since a specific time"""
+        with self.driver.session() as session:
+            result = session.run("""
+                MATCH (c:Contact)
+                WHERE c.updated_at >= $since
+                RETURN c
+            """, since=since)
+            
+            return [self._node_to_contact(record['c']) for record in result]
+
     def get_contacts(self, search_query: Optional[str] = None) -> List[Contact]:
         """Get all contacts with optional search"""
         with self.driver.session() as session:
@@ -398,7 +429,8 @@ class GraphDatabase:
             "linkedin_company": contact.linkedin_company,
             "linkedin_position": contact.linkedin_position,
             "linkedin_connected_date": contact.linkedin_connected_date,
-            "last_linkedin_sync": contact.last_linkedin_sync.isoformat() if contact.last_linkedin_sync else None
+            "last_linkedin_sync": contact.last_linkedin_sync.isoformat() if contact.last_linkedin_sync else None,
+            "last_google_sync": contact.last_google_sync.isoformat() if contact.last_google_sync else None
         }
         
     def _node_to_contact(self, node) -> Contact:
@@ -407,6 +439,7 @@ class GraphDatabase:
         created_at = node.get("created_at")
         updated_at = node.get("updated_at")
         last_linkedin_sync = node.get("last_linkedin_sync")
+        last_google_sync = node.get("last_google_sync")
         
         if created_at and hasattr(created_at, 'to_native'):
             created_at = created_at.to_native()
@@ -417,6 +450,13 @@ class GraphDatabase:
                 last_linkedin_sync = datetime.fromisoformat(last_linkedin_sync)
             except ValueError:
                 last_linkedin_sync = None
+        if last_google_sync and hasattr(last_google_sync, 'to_native'):
+            last_google_sync = last_google_sync.to_native()
+        elif last_google_sync and isinstance(last_google_sync, str):
+            try:
+                last_google_sync = datetime.fromisoformat(last_google_sync)
+            except ValueError:
+                last_google_sync = None
             
         return Contact(
             id=node["id"],
@@ -442,5 +482,6 @@ class GraphDatabase:
             linkedin_company=node.get("linkedin_company"),
             linkedin_position=node.get("linkedin_position"),
             linkedin_connected_date=node.get("linkedin_connected_date"),
-            last_linkedin_sync=last_linkedin_sync
+            last_linkedin_sync=last_linkedin_sync,
+            last_google_sync=last_google_sync
         )

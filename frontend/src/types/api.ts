@@ -24,6 +24,7 @@ export interface Contact {
   linkedin_position?: string;
   linkedin_connected_date?: string;
   last_linkedin_sync?: string;
+  last_google_sync?: string;
 }
 
 export interface ContactEdge {

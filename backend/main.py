@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse, FileResponse, JSONResponse
 import os
 from dotenv import load_dotenv
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
 from auth import GoogleAuth
@@ -119,6 +119,40 @@ async def sync_linkedin_contacts() -> LinkedInSyncResponse:
         # Sync contacts from LinkedIn
         result = await linkedin_service.sync_linkedin_contacts()
         
+        # If authenticated with Google, push updates for matched contacts
+        if google_auth.has_credentials() and result.matched > 0:
+            try:
+                logger.info("Pushing LinkedIn updates to Google Contacts...")
+                # Get contacts that were recently updated with LinkedIn data
+                # We can filter by last_linkedin_sync being very recent
+                # For simplicity, let's get all contacts with linkedin_connected_date
+                # A better approach would be to have the service return the IDs, but let's query DB
+                
+                # We'll fetch all contacts and filter in memory or add a DB query
+                # Adding a specific DB query is better
+                # Use a small buffer time to ensure we catch all updates
+                since_time = (result.created_at or datetime.now(timezone.utc))
+                
+                updated_contacts = db.get_contacts_updated_since(since_time)
+                
+                # Filter contacts that have a Google ID
+                contacts_to_update = [
+                    c for c in updated_contacts 
+                    if c.id and not c.id.startswith('linkedin_')
+                ]
+                
+                if contacts_to_update:
+                    count = contacts_service.batch_update_contacts_google(
+                        google_auth.get_credentials(), 
+                        contacts_to_update
+                    )
+                    logger.info(f"Pushed updates to {count} Google Contacts")
+                else:
+                    logger.info("No Google Contacts to update")
+                
+            except Exception as e:
+                logger.error(f"Failed to push updates to Google: {e}")
+        
         logger.info(f"LinkedIn sync completed: {result.imported} imported, {result.updated} updated, {result.matched} matched")
         return result
         
@@ -176,6 +210,19 @@ async def add_contact_tag(contact_id: str, tag_request: TagRequest):
     """Add manual tag to contact"""
     try:
         db.add_contact_tag(contact_id, tag_request.tag)
+        
+        # Sync to Google if authenticated
+        if google_auth.has_credentials():
+            try:
+                contact = db.get_contact_by_id(contact_id)
+                if contact:
+                    contacts_service.update_contact_google(
+                        google_auth.get_credentials(), 
+                        contact
+                    )
+            except Exception as e:
+                logger.error(f"Failed to sync tag to Google: {e}")
+                
         return {"status": "success"}
     except Exception as e:
         logger.error(f"Add tag failed: {e}")
@@ -186,6 +233,19 @@ async def remove_contact_tag(contact_id: str, tag: str):
     """Remove tag from contact"""
     try:
         db.remove_contact_tag(contact_id, tag)
+        
+        # Sync to Google if authenticated
+        if google_auth.has_credentials():
+            try:
+                contact = db.get_contact_by_id(contact_id)
+                if contact:
+                    contacts_service.update_contact_google(
+                        google_auth.get_credentials(), 
+                        contact
+                    )
+            except Exception as e:
+                logger.error(f"Failed to sync tag removal to Google: {e}")
+                
         return {"status": "success"}
     except Exception as e:
         logger.error(f"Remove tag failed: {e}")
@@ -195,20 +255,22 @@ async def remove_contact_tag(contact_id: str, tag: str):
 async def update_contact_notes(contact_id: str, notes_request: NotesRequest):
     """Update notes for contact"""
     try:
-        # Try to update in Google Contacts first if authenticated
+        # Update local DB first
+        db.update_contact_notes(contact_id, notes_request.notes)
+        
+        # Try to update in Google Contacts if authenticated
         if google_auth.has_credentials():
             try:
-                contacts_service.update_contact_notes(
-                    google_auth.get_credentials(), 
-                    contact_id, 
-                    notes_request.notes
-                )
+                # Fetch the full updated contact to sync all fields
+                contact = db.get_contact_by_id(contact_id)
+                if contact:
+                    contacts_service.update_contact_google(
+                        google_auth.get_credentials(), 
+                        contact
+                    )
             except Exception as e:
                 logger.error(f"Failed to update Google Contacts: {e}")
-                # We continue to update local DB even if Google sync fails
-                # You might want to notify the user here in a real app
         
-        db.update_contact_notes(contact_id, notes_request.notes)
         return {"status": "success"}
     except Exception as e:
         logger.error(f"Update notes failed: {e}")

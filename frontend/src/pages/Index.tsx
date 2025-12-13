@@ -202,7 +202,11 @@ const Index = () => {
                     size="sm"
                   >
                     <span className="font-bold mr-2">in</span>
-                    Sync
+                    {linkedinSyncMutation.isPending ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Sync"
+                    )}
                   </Button>
                   
                   <Button

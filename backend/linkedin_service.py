@@ -2,7 +2,7 @@ import requests
 import os
 import logging
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 from models import Contact, LinkedInSyncResponse
@@ -91,6 +91,8 @@ class LinkedInService:
 
     async def sync_linkedin_contacts(self) -> LinkedInSyncResponse:
         """Sync LinkedIn connections and match with existing contacts"""
+        # Use UTC to match Neo4j's datetime()
+        start_time = datetime.now(timezone.utc)
         logger.info("Starting LinkedIn contact sync")
         
         linkedin_connections = self.fetch_all_connections()
@@ -160,7 +162,8 @@ class LinkedInService:
             imported=imported,
             updated=updated,
             matched=matched,
-            total_linkedin_contacts=len(linkedin_connections)
+            total_linkedin_contacts=len(linkedin_connections),
+            created_at=start_time
         )
 
     def _find_matching_contact_fast(self, linkedin_contact: Dict[str, Any], 
