@@ -55,10 +55,28 @@ async def google_auth_start():
         logger.error(f"Auth start failed: {e}")
         raise HTTPException(status_code=500, detail="Authentication failed")
 
+from urllib.parse import urlparse, urlunparse
+
 @app.get("/auth/google/callback")
 async def google_auth_callback(code: str, state: str = None):
     """Handle Google OAuth callback"""
-    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:8080')
+    # Get configured frontend port
+    frontend_port = os.getenv('FRONTEND_PORT', '8080')
+    
+    # Get frontend URL from env or default
+    default_frontend = f'http://localhost:{frontend_port}'
+    frontend_url = os.getenv('FRONTEND_URL', default_frontend)
+    
+    # Auto-adjust port in frontend_url if FRONTEND_PORT is set and differs
+    if os.getenv('FRONTEND_PORT'):
+        try:
+            parsed = urlparse(frontend_url)
+            if parsed.port and str(parsed.port) != frontend_port:
+                new_netloc = parsed.netloc.replace(f":{parsed.port}", f":{frontend_port}")
+                frontend_url = urlunparse(parsed._replace(netloc=new_netloc))
+        except Exception:
+            pass
+
     try:
         credentials = google_auth.exchange_code(code)
         # Store credentials in session/memory for this demo

@@ -29,6 +29,8 @@ dist-ssr
 backend/.env
 backend/certs/
 
+contactsphere.service
+
 # pycaches
 __pycache__/
 *.pyc

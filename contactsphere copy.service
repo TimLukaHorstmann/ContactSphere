@@ -1,0 +1,17 @@
+[Unit]
+Description=ContactSphere Application
+After=network.target
+
+[Service]
+Type=simple
+User=<your_username>
+WorkingDirectory=<WorkingDirectory>
+# Change these ports if needed
+Environment="BACKEND_PORT=9000"
+Environment="FRONTEND_PORT=9090"
+# Path to the start script
+ExecStart=/bin/bash <WorkingDirectory>/start.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -2,7 +2,13 @@
 
 # ContactSphere startup script
 
+# Default ports
+export BACKEND_PORT=${BACKEND_PORT:-9000}
+export FRONTEND_PORT=${FRONTEND_PORT:-9090}
+
 echo "🚀 Starting ContactSphere..."
+echo "   Backend Port:  $BACKEND_PORT"
+echo "   Frontend Port: $FRONTEND_PORT"
 echo
 
 # Check if backend .env file exists
@@ -67,12 +73,12 @@ fi
 echo "✅ All dependencies installed!"
 echo
 echo "🌐 Starting application..."
-echo "   Backend:  http://localhost:8000"
-echo "   Frontend: http://localhost:8080"
+echo "   Backend:  https://localhost:$BACKEND_PORT"
+echo "   Frontend: http://localhost:$FRONTEND_PORT"
 echo
 echo "💡 Next steps:"
 echo "   1. Make sure Neo4j Desktop is running (or Neo4j server on localhost:7687)"
-echo "   2. Open http://localhost:8080 in your browser"
+echo "   2. Open http://localhost:$FRONTEND_PORT in your browser"
 echo "   3. Click 'Connect Google' to authenticate"
 echo "   4. Click 'Refresh' to sync your contacts"
 echo "   5. Explore your contact graph!"

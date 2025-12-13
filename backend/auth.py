@@ -4,12 +4,31 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from typing import Optional
 import json
+from urllib.parse import urlparse, urlunparse
 
 class GoogleAuth:
     def __init__(self):
         self.client_id = os.getenv('GOOGLE_CLIENT_ID')
         self.client_secret = os.getenv('GOOGLE_CLIENT_SECRET')
-        self.redirect_uri = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:8000/auth/google/callback')
+        
+        # Get configured backend port
+        backend_port = os.getenv('BACKEND_PORT', '8000')
+        
+        # Get redirect URI from env or default
+        default_redirect = f'http://localhost:{backend_port}/auth/google/callback'
+        self.redirect_uri = os.getenv('GOOGLE_REDIRECT_URI', default_redirect)
+        
+        # Auto-adjust port in redirect_uri if BACKEND_PORT is set and differs from the URI
+        if os.getenv('BACKEND_PORT'):
+            try:
+                parsed = urlparse(self.redirect_uri)
+                if parsed.port and str(parsed.port) != backend_port:
+                    # Replace port in netloc
+                    new_netloc = parsed.netloc.replace(f":{parsed.port}", f":{backend_port}")
+                    self.redirect_uri = urlunparse(parsed._replace(netloc=new_netloc))
+            except Exception:
+                pass # Keep original if parsing fails
+
         self.scopes = ['https://www.googleapis.com/auth/contacts.readonly']
         self.credentials: Optional[Credentials] = None
         
