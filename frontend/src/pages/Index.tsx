@@ -55,6 +55,11 @@ const Index = () => {
     queryFn: api.getUncategorizedContacts,
   });
 
+  const { data: authStatus } = useQuery({
+    queryKey: ['authStatus'],
+    queryFn: api.getAuthStatus,
+  });
+
   // Mutations
   const authMutation = useMutation({
     mutationFn: api.startAuth,
@@ -137,9 +142,9 @@ const Index = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => authMutation.mutate()}>
+                    <DropdownMenuItem onClick={() => authMutation.mutate()} disabled={authStatus?.authenticated}>
                       <Users className="h-4 w-4 mr-2" />
-                      Connect Google
+                      {authStatus?.authenticated ? "Connected" : "Connect Google"}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => syncMutation.mutate()}>
                       <RefreshCw className="h-4 w-4 mr-2" />
@@ -173,12 +178,12 @@ const Index = () => {
                 <div className="flex items-center gap-2">
                   <Button
                     onClick={() => authMutation.mutate()}
-                    disabled={authMutation.isPending}
-                    variant="outline"
+                    disabled={authMutation.isPending || authStatus?.authenticated}
+                    variant={authStatus?.authenticated ? "secondary" : "outline"}
                     size="sm"
                   >
                     <Users className="h-4 w-4 mr-2" />
-                    Connect
+                    {authStatus?.authenticated ? "Connected" : "Connect"}
                   </Button>
                   
                   <Button

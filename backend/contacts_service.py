@@ -78,6 +78,46 @@ class ContactsService:
             sync_token=self.db.get_sync_token()
         )
 
+    def update_contact_notes(self, credentials: Credentials, contact_id: str, notes: str):
+        """Update contact notes in Google Contacts"""
+        service = build('people', 'v1', credentials=credentials)
+        resource_name = f'people/{contact_id}'
+        
+        try:
+            # 1. Get current contact to get etag and current biographies
+            person = service.people().get(
+                resourceName=resource_name,
+                personFields='biographies,metadata'
+            ).execute()
+            
+            etag = person.get('etag')
+            biographies = person.get('biographies', [])
+            
+            # 2. Prepare update
+            # If there's an existing biography, update it. Otherwise create new.
+            if biographies:
+                biographies[0]['value'] = notes
+            else:
+                biographies.append({'value': notes, 'contentType': 'TEXT_PLAIN'})
+                
+            body = {
+                'etag': etag,
+                'biographies': biographies
+            }
+            
+            # 3. Execute update
+            service.people().updateContact(
+                resourceName=resource_name,
+                updatePersonFields='biographies',
+                body=body
+            ).execute()
+            
+            logger.info(f"Successfully updated notes for contact {contact_id} in Google Contacts")
+            
+        except Exception as e:
+            logger.error(f"Error updating contact notes in Google: {e}")
+            raise e
+
     def _parse_contact(self, person: Dict[str, Any]) -> Optional[Contact]:
         """Parse Google People API person to Contact model"""
         resource_name = person.get('resourceName', '')

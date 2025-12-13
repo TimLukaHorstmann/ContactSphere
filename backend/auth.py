@@ -29,7 +29,11 @@ class GoogleAuth:
             except Exception:
                 pass # Keep original if parsing fails
 
-        self.scopes = ['https://www.googleapis.com/auth/contacts.readonly']
+        # Allow scope change for when we upgrade from readonly to full access
+        os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
+        self.token_file = 'token.json'
+
+        self.scopes = ['https://www.googleapis.com/auth/contacts']
         self.credentials: Optional[Credentials] = None
         
         if not self.client_id or not self.client_secret:
@@ -76,15 +80,33 @@ class GoogleAuth:
         return flow.credentials
 
     def store_credentials(self, credentials: Credentials):
-        """Store credentials in memory (for demo purposes)"""
+        """Store credentials in memory and file"""
         self.credentials = credentials
+        try:
+            with open(self.token_file, 'w') as token:
+                token.write(credentials.to_json())
+        except Exception as e:
+            print(f"Error saving credentials: {e}")
 
     def get_credentials(self) -> Optional[Credentials]:
         """Get stored credentials"""
+        if not self.credentials and os.path.exists(self.token_file):
+            try:
+                self.credentials = Credentials.from_authorized_user_file(self.token_file, self.scopes)
+            except Exception:
+                self.credentials = None
+
         if self.credentials and self.credentials.expired and self.credentials.refresh_token:
-            self.credentials.refresh(Request())
+            try:
+                self.credentials.refresh(Request())
+                # Save refreshed token
+                self.store_credentials(self.credentials)
+            except Exception:
+                self.credentials = None
+                
         return self.credentials
 
     def has_credentials(self) -> bool:
         """Check if valid credentials are available"""
-        return self.credentials is not None and self.credentials.valid
+        creds = self.get_credentials()
+        return creds is not None and creds.valid

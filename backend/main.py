@@ -79,12 +79,17 @@ async def google_auth_callback(code: str, state: str = None):
 
     try:
         credentials = google_auth.exchange_code(code)
-        # Store credentials in session/memory for this demo
+        # Store credentials
         google_auth.store_credentials(credentials)
         return RedirectResponse(url=f"{frontend_url}?auth=success")
     except Exception as e:
         logger.error(f"Auth callback failed: {e}")
         return RedirectResponse(url=f"{frontend_url}?auth=error")
+
+@app.get("/api/auth/status")
+async def get_auth_status():
+    """Check if user is authenticated with Google"""
+    return {"authenticated": google_auth.has_credentials()}
 
 @app.post("/api/sync")
 async def sync_contacts() -> SyncResponse:
@@ -190,6 +195,19 @@ async def remove_contact_tag(contact_id: str, tag: str):
 async def update_contact_notes(contact_id: str, notes_request: NotesRequest):
     """Update notes for contact"""
     try:
+        # Try to update in Google Contacts first if authenticated
+        if google_auth.has_credentials():
+            try:
+                contacts_service.update_contact_notes(
+                    google_auth.get_credentials(), 
+                    contact_id, 
+                    notes_request.notes
+                )
+            except Exception as e:
+                logger.error(f"Failed to update Google Contacts: {e}")
+                # We continue to update local DB even if Google sync fails
+                # You might want to notify the user here in a real app
+        
         db.update_contact_notes(contact_id, notes_request.notes)
         return {"status": "success"}
     except Exception as e:

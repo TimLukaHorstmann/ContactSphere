@@ -28,6 +28,7 @@ dist-ssr
 **/.env
 backend/.env
 backend/certs/
+backend/token*
 
 contactsphere.service
 

@@ -6,6 +6,7 @@ class ApiClient {
   constructor() {
     // Bind methods to preserve 'this' context
     this.startAuth = this.startAuth.bind(this);
+    this.getAuthStatus = this.getAuthStatus.bind(this);
     this.syncContacts = this.syncContacts.bind(this);
     this.syncLinkedInContacts = this.syncLinkedInContacts.bind(this);
     this.getContacts = this.getContacts.bind(this);
@@ -44,6 +45,11 @@ class ApiClient {
 
   async startAuth(): Promise<AuthResponse> {
     const response = await this.fetchWithAuth('/auth/google');
+    return response.json();
+  }
+
+  async getAuthStatus(): Promise<{ authenticated: boolean }> {
+    const response = await this.fetchWithAuth('/api/auth/status');
     return response.json();
   }
 
