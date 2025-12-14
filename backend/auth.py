@@ -4,6 +4,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from typing import Optional
 import json
+from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 
 class GoogleAuth:
@@ -31,7 +32,11 @@ class GoogleAuth:
 
         # Allow scope change for when we upgrade from readonly to full access
         os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
-        self.token_file = 'token.json'
+        configured_token_file = os.getenv("GOOGLE_TOKEN_FILE", "").strip()
+        if configured_token_file:
+            self.token_file = configured_token_file
+        else:
+            self.token_file = str(Path(__file__).resolve().parent / "token.json")
 
         self.scopes = ['https://www.googleapis.com/auth/contacts']
         self.credentials: Optional[Credentials] = None

@@ -5,8 +5,12 @@
 # Default ports
 export BACKEND_PORT=${BACKEND_PORT:-9000}
 export FRONTEND_PORT=${FRONTEND_PORT:-9090}
+export BACKEND_HOST=${BACKEND_HOST:-127.0.0.1}
+export CONTACTSPHERE_MODE=${CONTACTSPHERE_MODE:-dev}
 
 echo "🚀 Starting ContactSphere..."
+echo "   Mode:         $CONTACTSPHERE_MODE"
+echo "   Backend Host: $BACKEND_HOST"
 echo "   Backend Port:  $BACKEND_PORT"
 echo "   Frontend Port: $FRONTEND_PORT"
 echo
@@ -73,17 +77,33 @@ fi
 echo "✅ All dependencies installed!"
 echo
 echo "🌐 Starting application..."
-echo "   Backend:  https://localhost:$BACKEND_PORT"
-echo "   Frontend: http://localhost:$FRONTEND_PORT"
+if [ "$CONTACTSPHERE_MODE" = "prod" ]; then
+    echo "   App:      http://$BACKEND_HOST:$BACKEND_PORT"
+else
+    echo "   Backend:  https://localhost:$BACKEND_PORT"
+    echo "   Frontend: http://localhost:$FRONTEND_PORT"
+fi
 echo
 echo "💡 Next steps:"
 echo "   1. Make sure Neo4j Desktop is running (or Neo4j server on localhost:7687)"
-echo "   2. Open http://localhost:$FRONTEND_PORT in your browser"
-echo "   3. Click 'Connect Google' to authenticate"
-echo "   4. Click 'Refresh' to sync your contacts"
-echo "   5. Explore your contact graph!"
-echo "   6. Use the 'Backup' button to download your data locally"
+if [ "$CONTACTSPHERE_MODE" = "prod" ]; then
+    echo "   2. Open your Cloudflare URL in your browser"
+    echo "   3. Click 'Connect Google' to authenticate"
+    echo "   4. Click 'Refresh' to sync your contacts"
+    echo "   5. Explore your contact graph!"
+    echo "   6. Use the 'Backup' button to download your data locally"
+else
+    echo "   2. Open http://localhost:$FRONTEND_PORT in your browser"
+    echo "   3. Click 'Connect Google' to authenticate"
+    echo "   4. Click 'Refresh' to sync your contacts"
+    echo "   5. Explore your contact graph!"
+    echo "   6. Use the 'Backup' button to download your data locally"
+fi
 echo
 
-# Start both backend and frontend
-npm run dev
+# Start app
+if [ "$CONTACTSPHERE_MODE" = "prod" ]; then
+    npm run prod
+else
+    npm run dev
+fi

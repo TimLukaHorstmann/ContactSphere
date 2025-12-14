@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 from auth import GoogleAuth
@@ -14,16 +15,34 @@ from linkedin_service import LinkedInService
 from backup_service import BackupService
 from models import SyncResponse, Contact, ContactEdge, TagRequest, NotesRequest, OrganizationNode, LinkedInSyncResponse
 
-load_dotenv()
+BACKEND_DIR = Path(__file__).resolve().parent
+FRONTEND_DIST_DIR = BACKEND_DIR.parent / "frontend" / "dist"
+FRONTEND_INDEX_FILE = FRONTEND_DIST_DIR / "index.html"
+
+load_dotenv(BACKEND_DIR / ".env")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ContactSphere API", version="1.0.0")
 
-# CORS middleware for frontend
+# CORS middleware for frontend (optional when served from same origin)
+cors_allow_origins_env = os.getenv("CORS_ALLOW_ORIGINS", "").strip()
+frontend_url_env = os.getenv("FRONTEND_URL", "").strip()
+
+if cors_allow_origins_env:
+    cors_allow_origins = [
+        origin.strip()
+        for origin in cors_allow_origins_env.split(",")
+        if origin.strip()
+    ]
+elif frontend_url_env:
+    cors_allow_origins = [frontend_url_env]
+else:
+    cors_allow_origins = ["http://localhost:8080", "http://localhost:9090"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,8 +60,11 @@ async def startup():
     await db.init_db()
     logger.info("ContactSphere API started")
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 async def root():
+    if FRONTEND_INDEX_FILE.is_file():
+        return FileResponse(FRONTEND_INDEX_FILE)
+
     return {"message": "ContactSphere API", "version": "1.0.0"}
 
 @app.get("/auth/google")
@@ -347,6 +369,30 @@ async def get_organizations() -> List[OrganizationNode]:
         logger.error(f"Get organizations failed: {e}")
         return []
 
+@app.get("/{full_path:path}", include_in_schema=False)
+async def serve_frontend_routes(full_path: str):
+    if not FRONTEND_INDEX_FILE.is_file():
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    if full_path in {"api", "auth"} or full_path.startswith(("api/", "auth/")):
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    if full_path:
+        resolved_path = (FRONTEND_DIST_DIR / full_path).resolve()
+        frontend_root = FRONTEND_DIST_DIR.resolve()
+        if resolved_path != frontend_root and frontend_root not in resolved_path.parents:
+            raise HTTPException(status_code=404, detail="Not Found")
+
+        if resolved_path.is_file():
+            return FileResponse(resolved_path)
+
+    return FileResponse(FRONTEND_INDEX_FILE)
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        app,
+        host=os.getenv("BACKEND_HOST", "127.0.0.1"),
+        port=int(os.getenv("BACKEND_PORT", "8000")),
+        reload=True,
+    )

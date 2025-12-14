@@ -6,6 +6,9 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && uv run python -m uvicorn main:app --reload --host 0.0.0.0 --port ${BACKEND_PORT:-8000} --ssl-keyfile certs/key.pem --ssl-certfile certs/cert.pem",
     "dev:frontend": "cd frontend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "prod:backend": "cd backend && uv run python -m uvicorn main:app --host ${BACKEND_HOST:-127.0.0.1} --port ${BACKEND_PORT:-9000} --proxy-headers --forwarded-allow-ips='*'",
+    "prod": "npm run build:frontend && npm run prod:backend",
     "install:all": "cd backend && pip install -r requirements.txt && cd ../frontend && npm install",
     "test": "cd backend && python -m pytest tests/ -v"
   },
