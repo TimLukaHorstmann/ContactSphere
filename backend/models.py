@@ -29,6 +29,9 @@ class Contact(BaseModel):
     linkedin_connected_date: Optional[str] = None
     last_linkedin_sync: Optional[datetime] = None
     last_google_sync: Optional[datetime] = None  # Track when we last pushed to Google
+    # Geolocation
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class ContactEdge(BaseModel):
     id: Optional[str] = None  # Changed from int to str to support Neo4j elementId

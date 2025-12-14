@@ -15,6 +15,7 @@ import { RefreshCw, Users, Network, Search, Download, Upload, Menu } from 'lucid
 import { useIsMobile } from '@/hooks/use-mobile';
 import GraphView from '@/components/GraphView';
 import ListView from '@/components/ListView';
+import MapView from '@/components/MapView';
 import DetailPanel from '@/components/DetailPanel';
 import { Contact, ContactEdge, LinkedInSyncResponse } from '@/types/api';
 import { api } from '@/lib/api';
@@ -261,12 +262,13 @@ const Index = () => {
 
         {/* Main Content */}
         <Tabs defaultValue={isMobile ? "list" : "graph"} className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="graph">Graph View</TabsTrigger>
-            <TabsTrigger value="list">List View</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+            <TabsTrigger value="graph">Graph</TabsTrigger>
+            <TabsTrigger value="list">List</TabsTrigger>
+            <TabsTrigger value="map">Map</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="graph">
+          <TabsContent value="graph" className="mt-4 border rounded-lg overflow-hidden bg-card text-card-foreground shadow-sm">
             <GraphView
               contacts={contacts}
               edges={edges}
@@ -277,12 +279,19 @@ const Index = () => {
             />
           </TabsContent>
           
-          <TabsContent value="list">
+          <TabsContent value="list" className="mt-4 border rounded-lg overflow-hidden bg-card text-card-foreground shadow-sm">
             <ListView
               contacts={contacts}
               uncategorizedContacts={uncategorizedContacts}
               onContactSelect={handleContactSelect}
               isLoading={contactsLoading}
+            />
+          </TabsContent>
+
+          <TabsContent value="map" className="mt-4 border rounded-lg overflow-hidden bg-card text-card-foreground shadow-sm">
+            <MapView
+              contacts={contacts}
+              onContactSelect={handleContactSelect}
             />
           </TabsContent>
         </Tabs>

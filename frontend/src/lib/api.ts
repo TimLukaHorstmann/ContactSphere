@@ -18,6 +18,7 @@ class ApiClient {
     this.getOrganizations = this.getOrganizations.bind(this);
     this.downloadBackup = this.downloadBackup.bind(this);
     this.restoreBackup = this.restoreBackup.bind(this);
+    this.geocodeContacts = this.geocodeContacts.bind(this);
   }
 
   private async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
@@ -163,6 +164,13 @@ class ApiClient {
 
   async getOrganizations(): Promise<OrganizationNode[]> {
     const response = await this.fetchWithAuth('/api/organizations');
+    return response.json();
+  }
+
+  async geocodeContacts(): Promise<{ total: number; updated: number; failed: number }> {
+    const response = await this.fetchWithAuth('/api/geocode', {
+      method: 'POST',
+    });
     return response.json();
   }
 }

@@ -144,7 +144,12 @@ const DetailPanel = ({ contact, open, onClose }: DetailPanelProps) => {
                     <Mail className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <span className="text-sm font-medium">Email</span>
-                      <p className="text-sm text-muted-foreground">{contact.email}</p>
+                      <a 
+                        href={`mailto:${contact.email}`}
+                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline block"
+                      >
+                        {contact.email}
+                      </a>
                     </div>
                   </div>
                 )}
@@ -154,7 +159,26 @@ const DetailPanel = ({ contact, open, onClose }: DetailPanelProps) => {
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <span className="text-sm font-medium">Phone</span>
-                      <p className="text-sm text-muted-foreground">{contact.phone}</p>
+                      <div className="flex items-center gap-2">
+                        <a 
+                          href={`https://wa.me/${contact.phone.replace(/[^0-9]/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          {contact.phone}
+                        </a>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          asChild
+                        >
+                          <a href={`tel:${contact.phone}`}>
+                            <Phone className="h-3 w-3" />
+                          </a>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}

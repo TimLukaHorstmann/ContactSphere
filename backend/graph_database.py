@@ -71,10 +71,22 @@ class GraphDatabase:
                     c.linkedin_connected_date = $linkedin_connected_date,
                     c.last_linkedin_sync = $last_linkedin_sync,
                     c.last_google_sync = $last_google_sync,
+                    c.latitude = $latitude,
+                    c.longitude = $longitude,
                     c.updated_at = datetime()
             """, **self._contact_to_dict(contact))
             
             return is_new
+
+    async def update_contact_coordinates(self, contact_id: str, lat: float, lon: float):
+        """Update coordinates for a specific contact"""
+        async with self.driver.session() as session:
+            await session.run("""
+                MATCH (c:Contact {id: $id})
+                SET c.latitude = $lat,
+                    c.longitude = $lon,
+                    c.updated_at = datetime()
+            """, id=contact_id, lat=lat, lon=lon)
 
     async def update_last_google_sync(self, contact_id: str):
         """Update the last_google_sync timestamp for a contact"""
@@ -95,6 +107,18 @@ class GraphDatabase:
                 SET c.last_google_sync = datetime()
             """, ids=contact_ids)
             
+    async def get_contacts_needing_geocoding(self) -> List[Contact]:
+        """Get contacts that have address info but no coordinates"""
+        async with self.driver.session() as session:
+            result = await session.run("""
+                MATCH (c:Contact)
+                WHERE (c.latitude IS NULL OR c.longitude IS NULL)
+                AND (c.address IS NOT NULL OR (c.city IS NOT NULL AND c.country IS NOT NULL))
+                RETURN c
+            """)
+            
+            return [self._node_to_contact(record["c"]) for record in await result.data()]
+
     async def get_contacts_updated_since(self, since: datetime) -> List[Contact]:
         """Get contacts updated since a specific time"""
         async with self.driver.session() as session:
@@ -454,7 +478,9 @@ class GraphDatabase:
             "linkedin_position": contact.linkedin_position,
             "linkedin_connected_date": contact.linkedin_connected_date,
             "last_linkedin_sync": contact.last_linkedin_sync.isoformat() if contact.last_linkedin_sync else None,
-            "last_google_sync": contact.last_google_sync.isoformat() if contact.last_google_sync else None
+            "last_google_sync": contact.last_google_sync.isoformat() if contact.last_google_sync else None,
+            "latitude": contact.latitude,
+            "longitude": contact.longitude
         }
         
     def _node_to_contact(self, node) -> Contact:
@@ -507,5 +533,7 @@ class GraphDatabase:
             linkedin_position=node.get("linkedin_position"),
             linkedin_connected_date=node.get("linkedin_connected_date"),
             last_linkedin_sync=last_linkedin_sync,
-            last_google_sync=last_google_sync
+            last_google_sync=last_google_sync,
+            latitude=node.get("latitude"),
+            longitude=node.get("longitude")
         )

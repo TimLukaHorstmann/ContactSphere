@@ -13,6 +13,7 @@ from graph_database import GraphDatabase
 from contacts_service import ContactsService
 from linkedin_service import LinkedInService
 from backup_service import BackupService
+from geocoding_service import GeocodingService
 from models import SyncResponse, Contact, ContactEdge, TagRequest, NotesRequest, OrganizationNode, LinkedInSyncResponse
 
 BACKEND_DIR = Path(__file__).resolve().parent
@@ -54,6 +55,7 @@ db = GraphDatabase()
 contacts_service = ContactsService(db)
 linkedin_service = LinkedInService(db)
 backup_service = BackupService(db)
+geocoding_service = GeocodingService(db)
 
 @app.on_event("startup")
 async def startup():
@@ -368,6 +370,16 @@ async def get_organizations() -> List[OrganizationNode]:
     except Exception as e:
         logger.error(f"Get organizations failed: {e}")
         return []
+
+@app.post("/api/geocode")
+async def geocode_contacts():
+    """Trigger geocoding for contacts missing coordinates"""
+    try:
+        result = await geocoding_service.geocode_contacts()
+        return result
+    except Exception as e:
+        logger.error(f"Geocoding failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Geocoding failed: {str(e)}")
 
 @app.get("/{full_path:path}", include_in_schema=False)
 async def serve_frontend_routes(full_path: str):

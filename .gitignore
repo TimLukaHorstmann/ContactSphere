@@ -37,3 +37,7 @@ __pycache__/
 *.pyc
 
 docs/
+
+**/package-lock.json
+# if already tracked, can be removed with:
+# git rm --cached package-lock.json
