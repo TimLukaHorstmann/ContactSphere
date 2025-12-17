@@ -25,13 +25,10 @@ const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = 
   const networkInstance = useRef<Network | null>(null);
   const nodesDataSet = useRef<DataSet<any> | null>(null);
   const edgesDataSet = useRef<DataSet<any> | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const lastUpdateTimeRef = useRef<number>(0);
   const [filterType, setFilterType] = useState<string>('all');
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [displayedNodeCount, setDisplayedNodeCount] = useState<number>(0);
-  const [maxNodes, setMaxNodes] = useState<number>(150);
-  const [communityOverlays, setCommunityOverlays] = useState<{ [key: string]: { x: number, y: number, size: number } }>({});
+  const [maxNodes, setMaxNodes] = useState<number>(300);
 
   // Function to limit nodes for very large networks
   const limitNodesForPerformance = (contacts: Contact[], maxNodesLimit: number = maxNodes): Contact[] => {
@@ -181,22 +178,22 @@ const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = 
       physics: {
         enabled: true,
         stabilization: { 
-          iterations: 200,
-          updateInterval: 50,
+          iterations: 150,
+          updateInterval: 25,
           fit: true
         },
         barnesHut: {
-          gravitationalConstant: -3000,
+          gravitationalConstant: -2000,
           centralGravity: 0.3,
-          springLength: 120,
+          springLength: 95,
           springConstant: 0.04,
-          damping: 0.25,
-          avoidOverlap: 0.2
+          damping: 0.2,
+          avoidOverlap: 0.1
         },
-        maxVelocity: 20,
-        minVelocity: 0.05,
+        maxVelocity: 40,
+        minVelocity: 0.5,
         solver: 'barnesHut',
-        timestep: 0.3,
+        timestep: 0.4,
         adaptiveTimestep: true
       },
       interaction: {
@@ -282,61 +279,60 @@ const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = 
       networkRef.current!.style.cursor = 'default';
     });
 
-    // Update community overlays when view changes
-    network.on('zoom', () => {
-      setTimeout(() => updateCommunityOverlays(network, limitedContacts), 100);
+    // Draw community labels directly on canvas for performance
+    network.on('afterDrawing', (ctx) => {
+      const communities: { [key: string]: { contacts: Contact[] } } = {};
+      
+      // Group by organization (for companies with 5+ employees)
+      limitedContacts.forEach(contact => {
+        if (contact.organization && !contact.uncategorized) {
+          if (!communities[contact.organization]) {
+            communities[contact.organization] = { contacts: [] };
+          }
+          communities[contact.organization].contacts.push(contact);
+        }
+      });
+
+      Object.entries(communities).forEach(([communityName, community]) => {
+        if (community.contacts.length < 5) return;
+
+        const nodeIds = community.contacts.map(c => c.id);
+        const positions = network.getPositions(nodeIds);
+        
+        if (Object.keys(positions).length > 0) {
+          let totalX = 0, totalY = 0, count = 0;
+          Object.values(positions).forEach(pos => {
+            if (pos) {
+              totalX += pos.x;
+              totalY += pos.y;
+              count++;
+            }
+          });
+          
+          if (count > 0) {
+            const centerX = totalX / count;
+            const centerY = totalY / count;
+            
+            // Draw text
+            const fontSize = Math.min(Math.max(community.contacts.length * 2, 12), 20);
+            ctx.font = `bold ${fontSize}px Arial`;
+            ctx.fillStyle = '#4a5568';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Add shadow/outline for readability
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+            ctx.shadowBlur = 4;
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.strokeText(communityName, centerX, centerY - 20);
+            
+            ctx.shadowBlur = 0;
+            ctx.fillText(communityName, centerX, centerY - 20);
+          }
+        }
+      });
     });
-
-    network.on('dragEnd', () => {
-      setTimeout(() => updateCommunityOverlays(network, limitedContacts), 100);
-    });
-
-    // Update community overlays during physics simulation (live updates)
-    network.on('stabilizationProgress', () => {
-      updateCommunityOverlays(network, limitedContacts);
-    });
-
-    // Update community overlays when nodes move (for manual dragging)
-    network.on('dragging', () => {
-      updateCommunityOverlays(network, limitedContacts);
-    });
-
-    // Update community overlays during any animation (throttled for performance)
-    const updateDuringAnimation = () => {
-      const now = Date.now();
-      if (now - lastUpdateTimeRef.current > 30) { // Increase to ~33fps for smoother updates
-        updateCommunityOverlays(network, limitedContacts);
-        lastUpdateTimeRef.current = now;
-      }
-      animationFrameRef.current = requestAnimationFrame(updateDuringAnimation);
-    };
-
-    // Start continuous animation updates for community labels
-    const startContinuousUpdates = () => {
-      if (!animationFrameRef.current) {
-        updateDuringAnimation();
-      }
-    };
-
-    // Stop animation updates only when explicitly stopped
-    const stopContinuousUpdates = () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-    };
-
-    // Start updates when stabilization begins and keep them running
-    network.on('startStabilizing', startContinuousUpdates);
-    
-    // Continue updates even after stabilization for smooth label following
-    network.on('stabilizationIterationsDone', () => {
-      // Keep animation running for label updates, just do a final positioning
-      setTimeout(() => updateCommunityOverlays(network, limitedContacts), 100);
-    });
-
-    // Always start continuous updates for label following
-    startContinuousUpdates();
 
     // Initial fit
     setTimeout(() => {
@@ -352,11 +348,6 @@ const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = 
       }
       nodesDataSet.current = null;
       edgesDataSet.current = null;
-      // Clean up any running animation frames
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
     };
   }, [limitedContacts, edges, onContactSelect]);
 
@@ -465,6 +456,7 @@ const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = 
       'LIVES_IN': 'Same Location',
       'ALUMNI_OF': 'Alumni',
       'SHARES_BIRTHDAY': 'Birthday',
+      'SHARED_TAG': 'Shared Tag',
       // Legacy support
       'colleague': 'Colleague',
       'local': 'Local',
@@ -474,77 +466,6 @@ const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = 
       'alumni': 'Alumni',
     };
     return labelMap[relationshipType as keyof typeof labelMap] || relationshipType;
-  };
-
-  // Function to identify communities/groups for overlay labels
-  const getCommunityClusters = (contacts: Contact[], edges: ContactEdge[]) => {
-    const communities: { [key: string]: { contacts: Contact[], center?: { x: number, y: number } } } = {};
-    
-    // Group by organization (for companies with 5+ employees)
-    contacts.forEach(contact => {
-      if (contact.organization && !contact.uncategorized) {
-        if (!communities[contact.organization]) {
-          communities[contact.organization] = { contacts: [] };
-        }
-        communities[contact.organization].contacts.push(contact);
-      }
-    });
-
-    // Filter to only show communities with 5+ members
-    return Object.entries(communities)
-      .filter(([_, community]) => community.contacts.length >= 5)
-      .reduce((acc, [name, community]) => {
-        acc[name] = community;
-        return acc;
-      }, {} as typeof communities);
-  };
-
-  // Update community overlay positions based on node positions
-  const updateCommunityOverlays = (network: NetworkType, contacts: Contact[]) => {
-    const communities = getCommunityClusters(contacts, edges);
-    const newOverlays: { [key: string]: { x: number, y: number, size: number } } = {};
-
-    Object.entries(communities).forEach(([communityName, community]) => {
-      const nodeIds = community.contacts.map(c => c.id);
-      
-      try {
-        const positions = network.getPositions(nodeIds);
-        
-        if (Object.keys(positions).length > 0) {
-          // Calculate center of community
-          let totalX = 0, totalY = 0, count = 0;
-          Object.values(positions).forEach(pos => {
-            if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
-              totalX += pos.x;
-              totalY += pos.y;
-              count++;
-            }
-          });
-          
-          if (count > 0) {
-            const centerX = totalX / count;
-            const centerY = totalY / count;
-            
-            // Convert network coordinates to canvas coordinates
-            const canvasPosition = network.canvasToDOM({x: centerX, y: centerY});
-            
-            // Only update if we have valid coordinates
-            if (canvasPosition && typeof canvasPosition.x === 'number' && typeof canvasPosition.y === 'number') {
-              newOverlays[communityName] = {
-                x: canvasPosition.x,
-                y: canvasPosition.y,
-                size: Math.min(Math.max(community.contacts.length * 2, 12), 20)
-              };
-            }
-          }
-        }
-      } catch (error) {
-        // Silently handle errors (network might be in transition)
-        console.debug('Error updating community overlay for', communityName, error);
-      }
-    });
-
-    setCommunityOverlays(newOverlays);
   };
 
   const getNodeColor = (contact: Contact) => {
@@ -579,6 +500,7 @@ const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = 
       'LIVES_IN': '#10b981',             // Green - same location
       'ALUMNI_OF': '#06b6d4',            // Cyan - same school
       'SHARES_BIRTHDAY': '#ec4899',      // Pink - same birthday
+      'SHARED_TAG': '#f43f5e',           // Rose - shared tag
       // Legacy support
       'colleague': '#3b82f6',
       'local': '#10b981',
@@ -698,28 +620,6 @@ const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = 
         {/* Network container */}
         <div ref={networkRef} className="w-full h-full" />
 
-        {/* Community overlays */}
-        {Object.entries(communityOverlays).map(([communityName, position]) => (
-          <div
-            key={communityName}
-            className="absolute pointer-events-none"
-            style={{
-              left: position.x - 60,
-              top: position.y - 10,
-              fontSize: `${position.size}px`,
-              fontWeight: 'bold',
-              color: '#4a5568',
-              textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
-              zIndex: 5,
-              maxWidth: '120px',
-              textAlign: 'center',
-              lineHeight: '1.2'
-            }}
-          >
-            {communityName}
-          </div>
-        ))}
-
         {/* Legend */}
         <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg">
           <h4 className="text-sm font-semibold mb-2">Relationships</h4>
@@ -743,6 +643,10 @@ const GraphView = ({ contacts, edges, onContactSelect, isLoading, searchQuery = 
             <div className="flex items-center gap-2">
               <div className="w-3 h-0.5 bg-pink-500"></div>
               <span className="text-xs">Birthday</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-0.5 bg-rose-500"></div>
+              <span className="text-xs">Shared Tag</span>
             </div>
           </div>
           <div className="text-xs text-gray-500 mt-2">

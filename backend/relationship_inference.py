@@ -31,7 +31,7 @@ class RelationshipInference:
         edges.extend(self._create_edges_from_groups(domain_groups, 'WORKS_WITH', 0.7))
         edges.extend(self._create_edges_from_groups(birthday_groups, 'SHARES_BIRTHDAY', 0.3))
         edges.extend(self._create_edges_from_groups(school_groups, 'ALUMNI_OF', 0.6))
-        edges.extend(self._create_edges_from_groups(tag_groups, 'SHARED_INTEREST', 0.5))
+        edges.extend(self._create_edges_from_groups(tag_groups, 'SHARED_TAG', 0.6))
         
         return edges
     

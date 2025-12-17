@@ -101,7 +101,7 @@ class LinkedInService:
         
         # Fetch all contacts once and create lookup structures for fast matching
         logger.info("Building contact lookup structures for fast matching...")
-        all_contacts = self.db.get_contacts()
+        all_contacts = await self.db.get_contacts()
         
         # Create efficient lookup dictionaries
         email_lookup = {}
@@ -147,13 +147,13 @@ class LinkedInService:
                 
                 if existing_contact:
                     # Update existing contact with LinkedIn data
-                    self._update_contact_with_linkedin_data(existing_contact, linkedin_contact)
+                    await self._update_contact_with_linkedin_data(existing_contact, linkedin_contact)
                     updated += 1
                     matched += 1
                 else:
                     # Create new contact from LinkedIn data
                     new_contact = self._create_contact_from_linkedin(linkedin_contact)
-                    self.db.upsert_contact(new_contact)
+                    await self.db.upsert_contact(new_contact)
                     imported += 1
                     
             except Exception as e:
@@ -164,7 +164,7 @@ class LinkedInService:
         
         # Re-infer relationships since we may have new contacts or updated organization info
         logger.info("Re-inferring relationships after LinkedIn sync...")
-        self._infer_relationships()
+        await self._infer_relationships()
         
         return LinkedInSyncResponse(
             imported=imported,
@@ -258,7 +258,7 @@ class LinkedInService:
         
         return None
 
-    def _update_contact_with_linkedin_data(self, contact: Contact, linkedin_contact: Dict[str, Any]):
+    async def _update_contact_with_linkedin_data(self, contact: Contact, linkedin_contact: Dict[str, Any]):
         """Update existing contact with LinkedIn data"""
         contact.linkedin_url = linkedin_contact.get("URL", "")
         contact.linkedin_company = linkedin_contact.get("Company", "")
@@ -286,7 +286,7 @@ class LinkedInService:
         if not contact.email and linkedin_email:
             contact.email = linkedin_email
         
-        self.db.upsert_contact(contact)
+        await self.db.upsert_contact(contact)
 
     def _create_contact_from_linkedin(self, linkedin_contact: Dict[str, Any]) -> Contact:
         """Create a new contact from LinkedIn data"""
@@ -310,19 +310,19 @@ class LinkedInService:
             updated_at=datetime.now()
         )
 
-    def _infer_relationships(self):
+    async def _infer_relationships(self):
         """Infer relationships between contacts and store edges"""
         # Get all contacts for relationship inference
-        all_contacts = self.db.get_contacts()
+        all_contacts = await self.db.get_contacts()
         logger.info(f"Starting relationship inference for {len(all_contacts)} contacts")
         
         # Clear existing edges to avoid duplicates
-        self.db.clear_all_edges()
+        await self.db.clear_all_edges()
         
         edges = self.relationship_inference.infer_all_relationships(all_contacts)
         logger.info(f"Inferred {len(edges)} relationships")
         
         for edge in edges:
-            self.db.add_edge(edge)
+            await self.db.add_edge(edge)
             
         logger.info(f"Stored {len(edges)} edges in database")

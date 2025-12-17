@@ -165,15 +165,6 @@ const Index = () => {
             </div>
             
             <div className="flex flex-col gap-4 md:flex-row md:items-center">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search contacts..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 w-full md:w-64"
-                />
-              </div>
               
               {!isMobile && (
                 <div className="flex items-center gap-2">
@@ -229,7 +220,7 @@ const Index = () => {
       {/* Stats */}
       <div className="container mx-auto px-4 py-6 max-w-full">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card>
+          <Card className="hover:shadow-md transition-shadow duration-200 bg-gradient-to-br from-card to-muted/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Contacts</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -239,7 +230,7 @@ const Index = () => {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="hover:shadow-md transition-shadow duration-200 bg-gradient-to-br from-card to-muted/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Relationships</CardTitle>
               <Network className="h-4 w-4 text-muted-foreground" />
@@ -249,7 +240,7 @@ const Index = () => {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="hover:shadow-md transition-shadow duration-200 bg-gradient-to-br from-card to-muted/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Uncategorized</CardTitle>
               <RefreshCw className="h-4 w-4 text-muted-foreground" />
@@ -267,6 +258,16 @@ const Index = () => {
             <TabsTrigger value="list">List</TabsTrigger>
             <TabsTrigger value="map">Map</TabsTrigger>
           </TabsList>
+          
+          <div className="relative mt-4">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search contacts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 w-full"
+            />
+          </div>
           
           <TabsContent value="graph" className="mt-4 border rounded-lg overflow-hidden bg-card text-card-foreground shadow-sm">
             <GraphView
@@ -302,6 +303,9 @@ const Index = () => {
         contact={selectedContact}
         open={showDetail}
         onClose={() => setShowDetail(false)}
+        edges={edges}
+        allContacts={contacts}
+        onContactSelect={handleContactSelect}
       />
     </div>
   );
